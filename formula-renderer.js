@@ -1,6 +1,8 @@
 (() => {
   "use strict";
 
+  const ft = (en, zh) => globalThis.XPDFI18n?.locale === "zh" ? zh : en;
+
   const MATHML_NS = "http://www.w3.org/1998/Math/MathML";
   const DISALLOWED_ELEMENTS = new Set([
     "script",
@@ -24,18 +26,18 @@
 
   function parseMathML(markup, display = true) {
     const source = String(markup || "").trim();
-    if (!source) throw new Error("MathML 源为空");
+    if (!source) throw new Error(ft("MathML source is empty", "MathML 源为空"));
 
     const xml = new DOMParser().parseFromString(source, "application/xml");
     const parserError = xml.querySelector("parsererror");
     if (parserError) {
-      throw new Error((parserError.textContent || "MathML 解析失败").replace(/\s+/g, " ").trim());
+      throw new Error((parserError.textContent || ft("MathML parsing failed", "MathML 解析失败")).replace(/\s+/g, " ").trim());
     }
 
     let root = xml.documentElement;
     if (!root || root.localName.toLowerCase() !== "math") {
       const math = xml.getElementsByTagNameNS(MATHML_NS, "math")[0] || xml.querySelector("math");
-      if (!math) throw new Error("MathML 中没有 <math> 根节点");
+      if (!math) throw new Error(ft("MathML has no <math> root", "MathML 中没有 <math> 根节点"));
       root = math;
     }
 
@@ -49,7 +51,7 @@
 
     const imported = document.importNode(root, true);
     if (!(imported instanceof Element) || imported.namespaceURI !== MATHML_NS) {
-      throw new Error("浏览器未能创建原生 MathML 节点");
+      throw new Error(ft("The browser could not create a native MathML node", "浏览器未能创建原生 MathML 节点"));
     }
     if (rootRowNormalized) imported.dataset.xpdfRootRow = "normalized";
     const error = findMathError(imported);
@@ -117,10 +119,10 @@
   }
 
   function findMathError(root) {
-    if (!(root instanceof Element)) return "公式输出无效";
+    if (!(root instanceof Element)) return ft("Invalid formula output", "公式输出无效");
     const node = root.matches("merror") ? root : root.querySelector("merror");
     if (!node) return "";
-    return (node.getAttribute("data-mjx-error") || node.textContent || "公式包含无法识别的 TeX").replace(/\s+/g, " ").trim();
+    return (node.getAttribute("data-mjx-error") || node.textContent || ft("The formula contains unrecognized TeX", "公式包含无法识别的 TeX")).replace(/\s+/g, " ").trim();
   }
 
   async function sourceToMathML(formula) {
@@ -130,9 +132,9 @@
     }
 
     const latex = typeof formula?.latex === "string" ? formula.latex.trim() : "";
-    if (!latex) throw new Error("LaTeX 源为空");
+    if (!latex) throw new Error(ft("LaTeX source is empty", "LaTeX 源为空"));
     if (!globalThis.MathJax?.startup?.promise || typeof globalThis.MathJax.tex2mmlPromise !== "function") {
-      throw new Error("MathJax TeX→MathML 转换器未加载");
+      throw new Error(ft("The MathJax TeX-to-MathML converter is unavailable", "MathJax TeX→MathML 转换器未加载"));
     }
     await globalThis.MathJax.startup.promise;
     const markup = await globalThis.MathJax.tex2mmlPromise(latex, { display });
@@ -140,10 +142,10 @@
   }
 
   async function renderNative(target, formula) {
-    if (!supportsNativeMathML()) throw new Error("当前 Chrome 不支持原生 MathML");
+    if (!supportsNativeMathML()) throw new Error(ft("This Chromium version does not support native MathML", "当前 Chrome 不支持原生 MathML"));
     const converted = await sourceToMathML(formula);
     const math = parseMathML(converted.markup, converted.display);
-    const accessibleSource = formula?.latex || math.textContent?.replace(/\s+/g, " ").trim() || "数学公式";
+    const accessibleSource = formula?.latex || math.textContent?.replace(/\s+/g, " ").trim() || ft("Mathematical formula", "数学公式");
     math.setAttribute("aria-label", accessibleSource);
     math.dataset.xpdfMath = "native";
     target.replaceChildren(math);
@@ -159,12 +161,12 @@
   }
 
   async function renderSvgFallback(target, formula) {
-    if (!globalThis.MathJax?.startup?.promise) throw new Error("MathJax 未加载");
+    if (!globalThis.MathJax?.startup?.promise) throw new Error(ft("MathJax is unavailable", "MathJax 未加载"));
     await globalThis.MathJax.startup.promise;
     const node = formula?.mathml
       ? await globalThis.MathJax.mathml2svgPromise(formula.mathml, { display: formula.display !== false })
       : await globalThis.MathJax.tex2svgPromise(formula.latex, { display: formula.display !== false });
-    if (!(node instanceof Element) || !node.querySelector("svg")) throw new Error("MathJax 未返回 SVG");
+    if (!(node instanceof Element) || !node.querySelector("svg")) throw new Error(ft("MathJax did not return SVG output", "MathJax 未返回 SVG"));
     const removed = removeAssistiveLayers(node);
     const mathError = findSvgMathError(node);
     if (mathError) throw new Error(mathError);
@@ -192,16 +194,16 @@
   }
 
   function findSvgMathError(root) {
-    if (!(root instanceof Element)) return "MathJax 输出无效";
+    if (!(root instanceof Element)) return ft("Invalid MathJax output", "MathJax 输出无效");
     const errorNode = root.querySelector('[data-mml-node="merror"], mjx-merror, .mjx-merror, [data-mjx-error]');
     if (!errorNode) return "";
-    return (errorNode.textContent || errorNode.getAttribute("data-mjx-error") || "公式包含 MathJax 无法识别的 TeX")
+    return (errorNode.textContent || errorNode.getAttribute("data-mjx-error") || ft("The formula contains TeX that MathJax could not parse", "公式包含 MathJax 无法识别的 TeX"))
       .replace(/\s+/g, " ")
       .trim();
   }
 
   async function render(target, formula, options = {}) {
-    if (!(target instanceof Element)) throw new TypeError("公式目标节点无效");
+    if (!(target instanceof Element)) throw new TypeError(ft("Invalid formula target node", "公式目标节点无效"));
     const allowSvgFallback = options.allowSvgFallback !== false;
     try {
       return await renderNative(target, formula);
@@ -216,7 +218,7 @@
           .map((error) => error instanceof Error ? error.message : String(error))
           .filter(Boolean)
           .join("；");
-        throw new Error(message || "公式渲染失败");
+        throw new Error(message || ft("Formula rendering failed", "公式渲染失败"));
       }
     }
   }

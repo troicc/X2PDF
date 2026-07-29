@@ -1,0 +1,17 @@
+.DS_Store
+Thumbs.db
+*.crx
+*.pem
+node_modules/
+dist/
+build/
+coverage/
+test-results/
+playwright-report/
+.pytest_cache/
+__pycache__/
+*.pyc
+*.log
+.env
+.env.*
+!.env.example

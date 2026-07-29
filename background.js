@@ -1,5 +1,9 @@
 importScripts("structured-parser.js");
 
+function msg(key, substitutions = [], fallback = key) {
+  try { return chrome.i18n.getMessage(key, substitutions) || fallback; } catch { return fallback; }
+}
+
 const SUPPORTED_HOSTS = new Set([
   "x.com",
   "www.x.com",
@@ -18,12 +22,12 @@ chrome.action.onClicked.addListener(async (tab) => {
   try {
     pageUrl = new URL(tab.url);
   } catch {
-    await showError("当前标签页地址无效。", tab.id);
+    await showError(msg("errorInvalidTab", [], "The current tab URL is invalid."), tab.id);
     return;
   }
 
   if (!SUPPORTED_HOSTS.has(pageUrl.hostname.toLowerCase())) {
-    await showError("请先打开一篇 X Article、长帖或帖子详情页。", tab.id);
+    await showError(msg("errorOpenX", [], "Open an X Article or post detail page first."), tab.id);
     return;
   }
 
@@ -45,7 +49,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     }
 
     if (result?.kind !== "document" || !result.document || !Array.isArray(result.document.blocks)) {
-      throw new Error(result?.message || "页面中没有识别到可导出的正文。请等待页面加载完成后重试。");
+      throw new Error(result?.message || msg("errorNoReadableContent", [], "No exportable content was found. Wait for the page to load and try again."));
     }
 
     await chrome.storage.session.set({
@@ -71,7 +75,7 @@ function articleUrlFromLocation(url) {
 async function extractArticleWithStructuredData(articleUrl) {
   const expectedId = extractArticleId(articleUrl);
   const temporaryTab = await chrome.tabs.create({ url: "about:blank", active: false });
-  if (!temporaryTab.id) throw new Error("无法创建 Article 数据捕获标签页。");
+  if (!temporaryTab.id) throw new Error(msg("errorCreateCaptureTab", [], "Unable to create the temporary Article capture tab."));
 
   try {
     const capture = await captureArticleBackendResponses(temporaryTab.id, articleUrl, expectedId);
@@ -124,7 +128,7 @@ async function extractArticleWithStructuredData(articleUrl) {
           method: "dom-fallback",
           responseMatched: false,
           network: capture.stats,
-          structuredError: parsed.error || "未取得结构化 Article 数据"
+          structuredError: parsed.error || "Structured Article data was not captured"
         },
         title: {
           value: fallbackDocument.metadata?.title || "",
@@ -134,14 +138,14 @@ async function extractArticleWithStructuredData(articleUrl) {
         completeness: {
           status: "warning",
           suspectedContentGaps: [{
-            text: "未捕获到 X Article content_state；代码、媒体顺序或标题可能不完整。"
+            text: "X Article content_state was not captured; code, media order, or the title may be incomplete."
           }]
         }
       };
       return { kind: "document", document: fallbackDocument };
     }
 
-    throw new Error(parsed.error || "未能从 X 后端响应中取得 Article content_state。");
+    throw new Error(parsed.error || "Unable to obtain Article content_state from captured X responses.");
   } finally {
     await chrome.tabs.remove(temporaryTab.id).catch(() => {});
   }
@@ -672,7 +676,7 @@ async function runExtractorWithRetry(tabId, attempts, interval = 550) {
   if (lastResult) {
     return lastResult;
   }
-  throw lastError || new Error("无法读取当前 X 页面。");
+  throw lastError || new Error(msg("errorReadPage", [], "Unable to read the current X page."));
 }
 
 async function showError(message, tabId) {
@@ -730,7 +734,7 @@ const MAX_MEDIA_CACHE_BYTES = 48 * 1024 * 1024;
 
 async function fetchMediaAsDataUrl(value) {
   const url = normalizeAllowedMediaUrl(value);
-  if (!url) throw new Error("不支持的媒体地址。");
+  if (!url) throw new Error(msg("errorUnsupportedMedia", [], "Unsupported media URL."));
   const key = url.href;
   if (mediaCache.has(key)) return mediaCache.get(key).dataUrl;
 
@@ -739,11 +743,11 @@ async function fetchMediaAsDataUrl(value) {
     cache: "force-cache",
     referrerPolicy: "no-referrer"
   });
-  if (!response.ok) throw new Error(`图片下载失败：${response.status}`);
+  if (!response.ok) throw new Error(msg("errorMediaDownload", [String(response.status)], `Image download failed: ${response.status}`));
   const contentType = (response.headers.get("content-type") || "").split(";")[0].toLowerCase();
-  if (!contentType.startsWith("image/")) throw new Error("返回内容不是图片。");
+  if (!contentType.startsWith("image/")) throw new Error(msg("errorNotImage", [], "The returned content is not an image."));
   const buffer = await response.arrayBuffer();
-  if (buffer.byteLength > 18 * 1024 * 1024) throw new Error("单张图片超过 18 MB。");
+  if (buffer.byteLength > 18 * 1024 * 1024) throw new Error(msg("errorImageTooLarge", [], "One image exceeds 18 MB."));
   const dataUrl = `data:${contentType};base64,${arrayBufferToBase64(buffer)}`;
 
   if (mediaCacheBytes + buffer.byteLength > MAX_MEDIA_CACHE_BYTES) {
@@ -779,7 +783,7 @@ function arrayBufferToBase64(buffer) {
 }
 
 async function exportPreviewTabToPdf(tabId, options = {}) {
-  if (!tabId) throw new Error("无法确定 PDF 预览标签页。");
+  if (!tabId) throw new Error(msg("errorPreviewTab", [], "Unable to identify the PDF preview tab."));
   const debuggee = { tabId };
   let attached = false;
 
@@ -808,8 +812,8 @@ async function exportPreviewTabToPdf(tabId, options = {}) {
       marginRight: 0
     });
 
-    if (!result?.data) throw new Error("Chrome 没有返回 PDF 数据。");
-    const filename = sanitizeFilename(options.filename || "X 长文") + ".pdf";
+    if (!result?.data) throw new Error(msg("errorNoPdfData", [], "Chrome did not return PDF data."));
+    const filename = sanitizeFilename(options.filename || msg("defaultDocumentTitle", [], "X Article")) + ".pdf";
     const downloadId = await chrome.downloads.download({
       url: `data:application/pdf;base64,${result.data}`,
       filename,
@@ -826,13 +830,13 @@ async function exportPreviewTabToPdf(tabId, options = {}) {
 }
 
 function sanitizeFilename(value) {
-  const text = String(value || "X 长文")
+  const text = String(value || msg("defaultDocumentTitle", [], "X Article"))
     .replace(/[\/:*?"<>|\u0000-\u001f]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
     .replace(/[. ]+$/g, "")
     .slice(0, 140);
-  return text || "X 长文";
+  return text || msg("defaultDocumentTitle", [], "X Article");
 }
 
 function isUsefulTitleHint(hint, currentTitle) {

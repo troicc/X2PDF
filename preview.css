@@ -678,7 +678,7 @@ button, select, input { font: inherit; }
   text-align: left;
 }
 .formula-render-failed::before {
-  content: "公式渲染失败，以下为原始源：";
+  content: "Formula rendering failed; original source:";
   display: block;
   margin-bottom: 0.35rem;
   color: #8a1c13;

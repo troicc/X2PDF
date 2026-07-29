@@ -1,0 +1,52 @@
+{
+  "appName": {
+    "message": "X2PDF — X 长文导出 PDF"
+  },
+  "appDescription": {
+    "message": "将 X Article、长帖和普通帖子导出为结构化 PDF，支持代码高亮、可选公式、媒体、字体选项与直接下载。"
+  },
+  "actionTitle": {
+    "message": "将当前 X 长文或帖子导出为 PDF"
+  },
+  "errorInvalidTab": {
+    "message": "当前标签页地址无效。"
+  },
+  "errorOpenX": {
+    "message": "请先打开一篇 X Article、长帖或帖子详情页。"
+  },
+  "errorNoReadableContent": {
+    "message": "页面中没有识别到可导出的正文。请等待页面加载完成后重试。"
+  },
+  "errorCreateCaptureTab": {
+    "message": "无法创建 Article 数据捕获标签页。"
+  },
+  "errorReadPage": {
+    "message": "无法读取当前 X 页面。"
+  },
+  "errorUnsupportedMedia": {
+    "message": "不支持的媒体地址。"
+  },
+  "errorMediaDownload": {
+    "message": "图片下载失败：$1",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorNotImage": {
+    "message": "返回内容不是图片。"
+  },
+  "errorImageTooLarge": {
+    "message": "单张图片超过 18 MB。"
+  },
+  "errorPreviewTab": {
+    "message": "无法确定 PDF 预览标签页。"
+  },
+  "errorNoPdfData": {
+    "message": "Chrome 没有返回 PDF 数据。"
+  },
+  "defaultDocumentTitle": {
+    "message": "X 长文"
+  }
+}

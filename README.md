@@ -1,186 +1,266 @@
-# X 长文导出 PDF
+# X2PDF
 
-![Version](https://img.shields.io/badge/version-0.12.0-1d9bf0)
-![Manifest](https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-4285F4)
-![Chrome](https://img.shields.io/badge/Chrome%20%2F%20Edge-109%2B-34A853)
-![License](https://img.shields.io/badge/license-MIT-green)
+<p align="center">
+  <strong>Export X Articles and long-form posts as clean, structured, searchable PDFs.</strong>
+</p>
 
-一个面向 **X Articles、长帖与普通帖子** 的 Chrome / Edge 扩展。
+<p align="center">
+  <a href="README.md">English</a> ·
+  <a href="README.zh-CN.md">简体中文</a>
+</p>
 
-它不是简单截图，也不是把 X 页面原样交给浏览器打印，而是优先读取 X 页面已经取得的结构化 Article 数据，重建标题、段落、标题层级、列表、引用、代码、公式和媒体，再生成可编辑预览与高质量 PDF。
+<p align="center">
+  <a href="https://github.com/troicc/X2PDF/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/troicc/X2PDF/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/troicc/X2PDF/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/troicc/X2PDF?display_name=tag&sort=semver"></a>
+  <img alt="Manifest V3" src="https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-4285F4">
+  <img alt="Chrome and Edge 109+" src="https://img.shields.io/badge/Chrome%20%2F%20Edge-109%2B-34A853">
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-green"></a>
+</p>
 
-> 本项目与 X Corp. 无隶属、合作或背书关系。导出内容的版权与使用权限由原作者、内容许可及适用法律决定。
+X2PDF is a local-first Chrome / Edge extension for exporting **X Articles, longer posts, and regular posts** to PDF.
 
----
+It does not simply screenshot the page or send the live X interface to the browser print dialog. For X Articles, it first attempts to capture the structured Article payload already loaded by the page, reconstructs the document from DraftJS blocks and entities, and then renders a dedicated reading view with headings, lists, quotes, source code, mathematical formulas, and media.
 
-## 目录
+> [!IMPORTANT]
+> X2PDF is not affiliated with, endorsed by, or sponsored by X Corp. Copyright and reuse rights for exported content remain subject to the original author, the applicable content license, and local law.
 
-- [主要特性](#主要特性)
-- [支持范围](#支持范围)
-- [效果与设计目标](#效果与设计目标)
-- [工作原理](#工作原理)
-- [为什么导出时会看到页面自动滚动](#为什么导出时会看到页面自动滚动)
-- [安装](#安装)
-- [使用方法](#使用方法)
-- [预览与导出选项](#预览与导出选项)
-- [代码支持](#代码支持)
-- [公式支持](#公式支持)
-- [PDF 生成流程](#pdf-生成流程)
-- [权限与隐私](#权限与隐私)
-- [项目结构](#项目结构)
-- [本地开发](#本地开发)
-- [测试](#测试)
-- [诊断与问题反馈](#诊断与问题反馈)
-- [已知限制](#已知限制)
-- [路线图](#路线图)
-- [贡献](#贡献)
-- [常见问题](#常见问题)
-- [第三方组件](#第三方组件)
-- [许可证](#许可证)
+<p align="center">
+  <img src="docs/images/preview.png" alt="X2PDF structured Article preview with code and formula support" width="100%">
+</p>
 
----
+<p align="center">
+  <a href="https://github.com/troicc/X2PDF/releases/latest"><strong>Download the latest release</strong></a> ·
+  <a href="#installation">Install from source</a> ·
+  <a href="README.zh-CN.md">中文说明</a>
+</p>
 
-## 主要特性
+## Table of contents
 
-### 结构化提取
+- [Highlights](#highlights)
+- [Supported content](#supported-content)
+- [Screenshots](#screenshots)
+- [Installation](#installation)
+- [Usage](#usage)
+- [How it works](#how-it-works)
+- [Why an Article tab may scroll automatically](#why-an-article-tab-may-scroll-automatically)
+- [Preview and export options](#preview-and-export-options)
+- [Code blocks](#code-blocks)
+- [Mathematical formulas](#mathematical-formulas)
+- [PDF generation](#pdf-generation)
+- [Permissions and privacy](#permissions-and-privacy)
+- [Project structure](#project-structure)
+- [Development](#development)
+- [Testing](#testing)
+- [Publishing and releases](#publishing-and-releases)
+- [Diagnostics and bug reports](#diagnostics-and-bug-reports)
+- [Known limitations](#known-limitations)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [FAQ](#faq)
+- [Third-party components](#third-party-components)
+- [License](#license)
 
-- 优先捕获 X 页面已经请求的 Article JSON，而不是仅依赖易变的 DOM 选择器。
-- 从 DraftJS `content_state.blocks` 和 `entityMap` 恢复文章原始顺序。
-- 标题优先使用结构化数据中的 `article.title`，避免把正文第一个章节标题误判为文章标题。
-- DOM 只作为普通帖子、长帖及缺失媒体或公式时的兼容兜底。
+## Highlights
 
-### 富文本支持
+### Structured X Article extraction
 
-- 文章标题和多级正文标题
-- 普通段落
-- 粗体、斜体、下划线、删除线
-- 行内代码
-- 上标和下标
-- 有序列表、无序列表及嵌套列表
-- 引用块
-- 分隔线
-- 表格
-- 链接卡片
-- 嵌入帖子
-- 图片、视频封面和 GIF 封面
+- Captures the structured Article JSON that the X page has already requested whenever possible.
+- Reconstructs the original order from DraftJS `content_state.blocks` and `entityMap`.
+- Uses `article.title` as the verified title instead of guessing from the first large text node.
+- Keeps DOM extraction as a compatibility fallback for regular posts, longer posts, and incomplete Article entities.
 
-### 代码支持
+### Rich-text preservation
 
-- 从 X Article 的 Markdown entity 恢复真实代码文本。
-- 保留换行、缩进、注释和特殊字符。
-- 本地 PrismJS 语法高亮，不依赖第三方 CDN。
-- 每个代码块提供一键复制按钮。
-- PDF 中仍然保留可选择、可复制的代码文本。
+- Article title and multiple heading levels
+- Paragraphs
+- Bold, italic, underline, and strikethrough
+- Inline code
+- Superscript and subscript
+- Ordered, unordered, and nested lists
+- Block quotes
+- Horizontal separators
+- Tables
+- Link cards and embedded posts
+- Images, video thumbnails, and GIF thumbnails
 
-### 公式支持
+### Source code
 
-- 识别 X DraftJS 中的 `LATEX`、`TEX`、`MATH` 和 `EQUATION` entity。
-- 支持通过 `entityKey` 从已捕获响应中反查公式源。
-- 后端公式源不完整时，从 X 当前页面的 MathML、MathJax、KaTeX 或可访问性属性中补取。
-- 默认使用 Chromium 原生 MathML，公式在预览与 PDF 中可选择、可搜索。
-- 复杂公式无法使用原生 MathML 时，单公式降级为 SVG。
-- 每个 LaTeX 公式提供“复制 LaTeX”按钮。
+- Restores real code text from Markdown entities in X Articles.
+- Preserves indentation, line breaks, comments, and special characters.
+- Uses locally bundled PrismJS syntax highlighting; no runtime code is loaded from a CDN.
+- Provides a **Copy** button for every code block.
+- Keeps code selectable and copyable in the generated PDF.
 
-### PDF 导出
+### Mathematical formulas
 
-- 一键直接下载 PDF，不打开系统打印窗口。
-- A4 和 Letter 页面尺寸。
-- 打印背景、代码高亮、图片、公式和链接。
-- 启用 tagged PDF 与文档 outline。
-- 图片在导出前缓存，降低打印瞬间网络失败造成的缺图风险。
+- Recognizes `LATEX`, `TEX`, `MATH`, and `EQUATION` entities.
+- Resolves formula sources through `entityKey` references when the current entity contains only an identifier.
+- Falls back to rendered MathML, MathJax, KaTeX annotations, and accessibility attributes when the Article payload is incomplete.
+- Uses native Chromium MathML by default, making most formulas selectable and searchable in the PDF.
+- Falls back to SVG for an individual formula only when native MathML is unsuitable.
+- Provides a **Copy LaTeX** button in the preview.
 
-### 排版选项
+### Direct PDF export
 
-- X 原生 Chirp 风格
-- 衬线阅读风格
-- 系统无衬线风格
-- 三档正文字号
-- 四种代码主题
-- 图片、嵌入内容、来源开关
-- 代码换行开关
-- 设置自动保存在浏览器本地
+- Generates and downloads the PDF directly without opening the system print dialog.
+- Supports A4 and Letter page sizes.
+- Preserves backgrounds, syntax highlighting, images, formulas, and links.
+- Enables tagged PDF output and a document outline where Chromium supports them.
+- Caches X media before printing to reduce missing-image failures.
 
----
+### Reading and print customization
 
-## 支持范围
+- X-style Chirp font option
+- Serif reading option
+- System sans-serif option
+- Three body-text sizes
+- X Light, GitHub Light, One Dark, and plain code themes
+- Toggles for images, embeds, source information, and code wrapping
+- Preferences saved locally in the browser
 
-| 内容类型 | 示例路径 | 处理方式 | 当前状态 |
+## Supported content
+
+| Content type | Typical URL / source | Extraction path | Status |
 |---|---|---|---|
-| X Article | `x.com/user/article/123...` | 捕获 Article JSON，解析 DraftJS | 主要支持目标 |
-| 包含 Article 的帖子 | `x.com/user/status/123...` | 先识别 Article 链接，再提取 Article | 支持 |
-| Longer Post / 长帖 | `x.com/user/status/123...` | DOM 与页面文本兼容提取 | 支持，准确度取决于页面结构 |
-| 普通帖子 | `x.com/user/status/123...` | DOM 提取 | 支持 |
-| 嵌套列表 | Article DraftJS blocks | 按 `depth` 重建 | 支持 |
-| Markdown 代码 | Article atomic entity | 转换为结构化 code block | 支持 |
-| LaTeX 公式 | Article LATEX entity | 原生 MathML，SVG 兜底 | 支持 |
-| 图片 | Article media entity / DOM | 原始顺序插入并缓存 | 支持 |
-| 视频、GIF | 媒体 entity | 导出封面和原始链接 | 部分支持 |
-| 投票、链接卡片、嵌入帖子 | entity / 页面数据 | 结构化卡片 | 视 X 返回数据而定 |
-| 私密、删除或无权访问内容 | 任意 | 仅能处理当前账号可访问内容 | 不绕过访问控制 |
+| X Article | `x.com/user/article/123...` | Captured Article JSON + DraftJS parser | Primary supported format |
+| Post linking to an Article | `x.com/user/status/123...` | Resolve Article URL, then parse the Article | Supported |
+| Longer Post | `x.com/user/status/123...` | DOM compatibility extractor | Supported, less stable than Articles |
+| Regular Post | `x.com/user/status/123...` | DOM compatibility extractor | Supported |
+| Nested lists | DraftJS blocks | Rebuilt from block type and `depth` | Supported |
+| Markdown code | Atomic entity | Parsed into a structured code block | Supported |
+| LaTeX formula | Formula entity | Native MathML with SVG fallback | Supported |
+| Images | Media entity / DOM fallback | Inserted in document order and cached | Supported |
+| Video / GIF | Media entity | Thumbnail plus source link | Partial |
+| Polls, cards, embedded posts | Entity / page data | Structured card when data is available | Best effort |
+| Private, deleted, or restricted content | Any | Only content visible to the current browser session | No access-control bypass |
 
----
+## Screenshots
 
-## 效果与设计目标
+<table>
+<tr>
+<td width="50%"><img src="docs/images/code-highlight.png" alt="Syntax-highlighted selectable code with copy button"></td>
+<td width="50%"><img src="docs/images/formula-rendering.png" alt="Selectable formula with Copy LaTeX button"></td>
+</tr>
+<tr>
+<td align="center"><strong>Selectable, highlighted code</strong></td>
+<td align="center"><strong>Native MathML with LaTeX copying</strong></td>
+</tr>
+</table>
 
-项目重点不是像素级复刻 X 页面，而是生成适合保存、阅读和研究的文档：
+The screenshots are repository-maintained mockups based on the actual preview styles. Exported results depend on the source Article and the selected layout options.
 
-- 正文层级明确；
-- 代码可复制且有语法高亮；
-- 公式尽量可选择和搜索；
-- 图片清晰且按文章顺序出现；
-- 不混入侧栏、互动按钮、推荐内容和浏览器页眉页脚；
-- 不要求用户把 Cookie 或登录令牌交给第三方服务器。
+## Installation
 
-![首页预览](docs/images/article-preview.png)
+X2PDF is currently distributed as an unpacked Manifest V3 extension.
 
-![代码和公式](docs/images/code-and-formula.png)
+### Option 1: download a release
 
----
+Open <https://github.com/troicc/X2PDF/releases/latest>, download `X2PDF-v0.12.0.zip`, and extract it. Release ZIPs contain only the extension runtime files.
 
-## 工作原理
+### Option 2: clone the repository
+
+```bash
+git clone https://github.com/troicc/X2PDF.git
+cd X2PDF
+```
+
+### Option 3: download the source ZIP
+
+Open the repository page, select **Code → Download ZIP**, and extract it locally.
+
+### Load it in Chrome
+
+1. Open `chrome://extensions/`.
+2. Enable **Developer mode**.
+3. Select **Load unpacked**.
+4. Choose the repository directory that directly contains `manifest.json`.
+
+### Load it in Microsoft Edge
+
+1. Open `edge://extensions/`.
+2. Enable **Developer mode**.
+3. Select **Load unpacked**.
+4. Choose the repository directory that directly contains `manifest.json`.
+
+### Browser requirements
+
+- Chrome 109 or newer
+- Chromium 109 or newer
+- Chromium-based Microsoft Edge 109 or newer
+
+The minimum version is mainly required for the native MathML rendering path.
+
+### Updating an unpacked installation
+
+1. Pull or replace the local files.
+2. Open the browser extension management page.
+3. Click **Reload** on the X2PDF card.
+4. Close old preview tabs and export the Article again.
+
+## Usage
+
+1. Sign in to X and open an Article or post detail page.
+2. Wait until the page has substantially loaded.
+3. Click the X2PDF extension icon.
+4. X2PDF extracts the content and opens a dedicated preview tab.
+5. Verify the title, media, code blocks, and formulas.
+6. Adjust the page size, font, text size, and code theme.
+7. Click **Download PDF**.
+8. The file is written to the browser's default download location.
+
+### Editable title
+
+The document title in the preview is editable. The edited value is used for:
+
+- the PDF title shown on the first page;
+- the downloaded filename.
+
+Editing it does not modify the original X Article.
+
+## How it works
 
 ```mermaid
 flowchart TD
-    A[用户打开 X Article 或帖子] --> B[点击扩展图标]
-    B --> C{是否直接为 Article URL}
-    C -- 是 --> D[创建临时后台标签页]
-    C -- 否 --> E[检查当前帖子是否包含 Article 链接]
-    E -->|找到 Article| D
-    E -->|普通帖子或长帖| F[DOM 兼容提取]
+    A[Open an X Article or post] --> B[Click the X2PDF icon]
+    B --> C{Direct Article URL?}
+    C -- Yes --> D[Open a temporary Article tab]
+    C -- No --> E[Look for an Article link in the post]
+    E -->|Article found| D
+    E -->|Regular or longer post| F[DOM compatibility extraction]
 
-    D --> G[通过 chrome.debugger 启用 CDP Network]
-    G --> H[加载 Article 页面并监听 JSON 响应]
-    H --> I[递归寻找 title + content_state]
-    I --> J[解析 DraftJS blocks 与 entityMap]
+    D --> G[Enable CDP Network through chrome.debugger]
+    G --> H[Load the Article and inspect JSON responses]
+    H --> I[Find title + content_state]
+    I --> J[Parse DraftJS blocks and entities]
 
-    J --> K{媒体或公式是否仍未解析}
-    K -- 是 --> L[滚动 DOM 兜底采集]
-    K -- 否 --> M[生成统一 Document AST]
+    J --> K{Any unresolved media or formulas?}
+    K -- Yes --> L[Targeted DOM fallback collection]
+    K -- No --> M[Build a normalized document AST]
     L --> M
     F --> M
 
-    M --> N[保存到 chrome.storage.session]
-    N --> O[打开独立预览页面]
-    O --> P[代码高亮 / 公式排版 / 图片缓存]
+    M --> N[Store the document in chrome.storage.session]
+    N --> O[Open the standalone preview]
+    O --> P[Highlight code, render formulas, cache media]
     P --> Q[Page.printToPDF]
-    Q --> R[chrome.downloads 直接下载]
+    Q --> R[Download through chrome.downloads]
 ```
 
-### 1. Article 数据捕获
+### 1. Capturing the Article payload
 
-扩展在临时标签页导航到 Article 页面前，通过 Chrome DevTools Protocol 开启 Network 域。页面加载时，扩展读取当前页面已经收到的 JSON 响应，并递归寻找同时包含以下结构的候选对象：
+Before navigating the temporary Article tab, the extension enables the Chrome DevTools Protocol Network domain. It inspects JSON responses already received by the X page and recursively looks for a candidate containing:
 
 ```text
 title
 content_state.blocks
-content_state.entityMap 或 content_state.entities
+content_state.entityMap or content_state.entities
 ```
 
-这一策略不依赖固定 GraphQL operation 名称或 hash，因此比硬编码某个 X API URL 更耐页面更新。
+The detector does not rely on a single hard-coded GraphQL operation name or hash.
 
-### 2. DraftJS 解析
+### 2. DraftJS parsing
 
-解析器会把 X Article 的 DraftJS 内容转换成项目内部的统一文档块：
+The structured parser converts X's DraftJS representation into a platform-independent internal document model:
 
 ```text
 paragraph
@@ -197,148 +277,77 @@ table
 separator
 ```
 
-PDF 渲染层只认识统一文档块，不直接依赖 X 页面 DOM。
+The preview and PDF renderer consume this normalized model rather than the live X DOM.
 
-### 3. 兼容兜底
+### 3. Compatibility fallback
 
-若结构化数据缺少公式源或媒体 URL，扩展才会滚动文章页面，补充采集当前实际渲染出来的内容。
+If the structured payload contains an unresolved formula reference or missing media data, X2PDF inspects the rendered page for the missing item. DOM extraction is also used for regular and longer posts that do not expose an Article `content_state`.
 
-### 4. 预览与导出
+### 4. Preview and export
 
-统一文档数据通过 `chrome.storage.session` 传递给预览页。预览页完成代码高亮、公式渲染、字体选择和图片本地化后，调用 `Page.printToPDF` 生成 PDF。
+The normalized document is transferred through `chrome.storage.session`. The preview page then applies typography, PrismJS highlighting, MathML rendering, media caching, and print CSS before calling Chromium's PDF engine.
 
----
+## Why an Article tab may scroll automatically
 
-## 为什么导出时会看到页面自动滚动
+X uses lazy loading and virtualized rendering for long content:
 
-X 会对长文章使用懒加载和虚拟化：
+- images may not load until they are near the viewport;
+- formulas can be mounted by a delayed component;
+- media far away from the viewport may be unmounted;
+- loading media can change the total Article height.
 
-- 图片滚动到附近后才加载；
-- 公式可能由独立前端组件延迟渲染；
-- 离开视口较远的媒体节点可能被 React 卸载；
-- 首轮加载图片后，文章总高度还会继续变化。
+When structured Article data still contains unresolved formulas or media, X2PDF performs a fallback scan of the rendered page. The current fallback can make several top-to-bottom passes and stops when the collected result becomes stable.
 
-当结构化 Article 数据中仍存在未解析的公式或媒体时，扩展会执行滚动兜底采集。当前实现最多进行三轮扫描，并在页面高度和采集结果稳定后提前停止。
+The scrolling is used only to read content. X2PDF does **not** use it to:
 
-滚动过程只用于读取页面内容，不会：
+- like or repost content;
+- reply to a post;
+- follow an account;
+- edit or publish content;
+- change account settings.
 
-- 点赞；
-- 转发；
-- 回复；
-- 关注账号；
-- 修改帖子；
-- 向 X 发送发布操作。
+## Preview and export options
 
-普通 Article 如果结构化数据已完整取得，通常不需要完整滚动采集。
-
----
-
-## 安装
-
-### 从 GitHub 源码安装
-
-1. 下载仓库 ZIP，或克隆仓库：
-
-   ```bash
-   git clone https://github.com/<your-name>/<your-repository>.git
-   ```
-
-2. 打开 Chrome 或 Edge 扩展管理页：
-
-   ```text
-   chrome://extensions/
-   ```
-
-   Edge 可打开：
-
-   ```text
-   edge://extensions/
-   ```
-
-3. 开启右上角的“开发者模式”。
-4. 点击“加载已解压的扩展程序”。
-5. 选择包含 `manifest.json` 的项目根目录。
-
-### 升级开发版
-
-1. 替换本地源码；
-2. 打开扩展管理页；
-3. 点击该扩展卡片上的“重新加载”；
-4. 已打开的旧预览页建议关闭后重新导出。
-
-### 浏览器要求
-
-- Chrome 109 或更新版本；
-- Chromium 109 或更新版本；
-- 基于 Chromium 的 Edge 109 或更新版本。
-
-最低版本要求主要来自原生 MathML 排版能力。
-
----
-
-## 使用方法
-
-1. 登录 X，并打开一篇 Article、长帖或帖子详情页。
-2. 等待页面基本加载完成。
-3. 点击浏览器工具栏中的“X 长文导出 PDF”图标。
-4. 扩展会提取内容并打开独立预览页。
-5. 检查标题、图片、代码和公式。
-6. 根据需要调整页面、字体、字号和代码主题。
-7. 点击“直接下载 PDF”。
-8. PDF 会保存到浏览器默认下载目录。
-
-### 标题编辑
-
-预览页中的文档标题可直接点击编辑。修改后的标题会用于：
-
-- PDF 首页标题；
-- 下载文件名。
-
-它不会修改 X 上的原文章。
-
----
-
-## 预览与导出选项
-
-| 选项 | 可选值 | 说明 |
+| Option | Values | Purpose |
 |---|---|---|
-| 页面 | A4 / Letter | 控制 PDF 页面尺寸 |
-| 字体 | X 原生 / 衬线阅读 / 系统无衬线 | 控制正文和标题风格 |
-| 字号 | 紧凑 / 标准 / 宽松 | 控制正文密度 |
-| 代码主题 | X 浅色 / GitHub 浅色 / One Dark / 不高亮 | 控制代码配色 |
-| 图片 | 开 / 关 | 是否导出图片 |
-| 嵌入内容 | 开 / 关 | 是否导出嵌入帖子、链接卡片等 |
-| 代码换行 | 开 / 关 | 长代码是否自动换行 |
-| 来源 | 开 / 关 | 是否在文末显示原始 URL 和提取时间 |
-| 复制诊断 | — | 复制提取与渲染诊断 JSON |
-| 直接下载 PDF | — | 后台生成并下载 PDF |
+| Page size | A4 / Letter | Controls the PDF paper size |
+| Font | X native / Serif / System sans-serif | Controls body and heading typography |
+| Text size | Compact / Standard / Relaxed | Controls reading density |
+| Code theme | X Light / GitHub Light / One Dark / Plain | Controls syntax colors |
+| Images | On / Off | Includes or hides images |
+| Embedded content | On / Off | Includes or hides post embeds and cards |
+| Wrap code | On / Off | Wraps long code lines |
+| Source | On / Off | Adds the original URL and capture time |
+| Copy diagnostics | — | Copies extraction and rendering diagnostics |
+| Download PDF | — | Generates and downloads the PDF directly |
 
-排版偏好保存在 `chrome.storage.local`，下次预览会自动恢复。
+Preferences are stored in `chrome.storage.local` and restored in later previews.
 
-### 字体说明
+### Font presets
 
-#### X 原生（Chirp）
+#### X native (Chirp)
 
-- 运行时尝试从 `abs.twimg.com` 加载 Chirp；
-- 扩展包不内置或重新分发 Chirp 字体文件；
-- 加载失败时自动回退为系统无衬线字体；
-- 中文字符使用操作系统可用的中文字体回退。
+- Attempts to load Chirp at runtime from `abs.twimg.com`.
+- Does not bundle or redistribute Chirp font files.
+- Falls back to the system sans-serif stack if loading fails.
+- Uses available system fonts for CJK characters.
 
-#### 衬线阅读
+#### Serif reading
 
-使用 Georgia、Noto Serif、宋体等字体回退，适合长文阅读和打印。
+Uses a fallback stack including Georgia, Noto Serif, and platform serif fonts for a book-like print appearance.
 
-#### 系统无衬线
+#### System sans-serif
 
-优先使用操作系统 UI 字体，兼容性最好。
+Uses the operating system's UI font stack and provides the broadest compatibility.
 
----
+> [!NOTE]
+> The extension interface follows the browser UI language and currently includes English and Simplified Chinese. English is the fallback locale.
 
-## 代码支持
+## Code blocks
 
-### 提取来源
+### Extraction source
 
-X Article 中的代码通常不是原生 `<pre>` 节点，而是位于 DraftJS atomic entity 的 Markdown 字段中。解析器会读取 Markdown fenced code：
+Code in an X Article is often stored inside the Markdown field of a DraftJS atomic entity rather than rendered as a native `<pre>` element. X2PDF parses fenced code such as:
 
 ````markdown
 ```python
@@ -347,80 +356,61 @@ def forward(x):
 ```
 ````
 
-并转换为：
+and converts it to a structured block:
 
-```text
+```json
 {
-  type: "code",
-  language: "python",
-  text: "def forward(x):\n    return x ** 2"
+  "type": "code",
+  "language": "python",
+  "text": "def forward(x):\n    return x ** 2"
 }
 ```
 
-### 高亮语言
+### Highlighted languages
 
-当前内置 PrismJS 组件包括：
+Bundled PrismJS components currently cover:
 
 - Python
-- JavaScript
-- TypeScript
-- JSX / TSX
-- HTML / XML
-- CSS
-- JSON
-- YAML
-- Markdown
-- Bash
-- PowerShell
-- Dockerfile
+- JavaScript, TypeScript, JSX, and TSX
+- HTML / XML and CSS
+- JSON, YAML, and Markdown
+- Bash, PowerShell, and Dockerfile
 - SQL
-- C
-- C++
-- C#
-- Java
-- Go
-- Rust
-- Kotlin
-- Swift
-- Ruby
-- R
-- MATLAB
-- Scala
-- Objective-C
+- C, C++, C#, and Objective-C
+- Java, Kotlin, Scala, and Swift
+- Go and Rust
+- Ruby, R, and MATLAB
 - Diff
 
-语言标签缺失时，扩展会进行保守自动识别；无法可靠判断时保持纯文本。
+When no language label exists, X2PDF uses conservative language detection. If the result is uncertain, the block remains plain text.
 
-### 复制代码
+### Copying code
 
-每个代码块右上角带有“复制”按钮：
+Each code block includes a **Copy** button that:
 
-- 复制原始代码字符串；
-- 不复制 PrismJS 生成的 `<span>` 标签；
-- 保留缩进和换行；
-- 首选 Clipboard API；
-- Clipboard API 被拒绝时，回退到隐藏 `textarea` 的传统复制方式；
-- 复制按钮在生成 PDF 时自动隐藏。
+- copies the original code string, not PrismJS-generated HTML;
+- preserves indentation and line breaks;
+- first uses the Clipboard API;
+- falls back to a hidden `textarea` when asynchronous clipboard access is denied;
+- is automatically hidden in the generated PDF.
 
----
+## Mathematical formulas
 
-## 公式支持
+### Formula recovery order
 
-### 公式恢复顺序
+1. Read direct fields such as `latex`, `tex`, `formula`, `equation`, or `mathml`.
+2. Resolve `entityKey` references against captured JSON responses.
+3. When the backend payload remains incomplete, inspect:
+   - native `<math>` elements;
+   - KaTeX `annotation[encoding="application/x-tex"]`;
+   - MathJax containers;
+   - `data-latex`, `data-tex`, and related attributes;
+   - accessibility labels and formula alternative text.
+4. Reinsert formulas according to the original DraftJS atomic-block order.
 
-1. 读取 entity 中的 `latex`、`tex`、`formula`、`equation`、`mathml` 等字段；
-2. 若只有 `entityKey`，在捕获到的 JSON 响应中查找引用；
-3. 若后端仍没有公式源，从页面中的以下内容补取：
-   - MathML `<math>`；
-   - KaTeX `annotation[encoding="application/x-tex"]`；
-   - MathJax 容器；
-   - `data-latex`、`data-tex`、`data-formula`；
-   - 可访问性标签和公式替代文本；
-4. 按 DraftJS atomic block 顺序插回文章。
+### Formula normalization
 
-### 公式规范化
-
-X 的可访问性公式有时会混入 Unicode 数学字母或缺少花括号，例如：
+Accessibility text can contain Unicode mathematical letters or malformed commands, for example:
 
 ```text
 \boldsymbol𝑆
@@ -428,7 +418,7 @@ X 的可访问性公式有时会混入 Unicode 数学字母或缺少花括号，
 \mathcal N
 ```
 
-解析器会在渲染前将其规范为合法 TeX，例如：
+X2PDF normalizes common cases into valid TeX such as:
 
 ```text
 \mathbf{S}
@@ -436,416 +426,373 @@ X 的可访问性公式有时会混入 Unicode 数学字母或缺少花括号，
 \mathcal{N}
 ```
 
-同时会折叠 DOM 中重复出现的相同 TeX，避免公式重复两行。
+It also collapses duplicate TeX sources discovered in multiple accessibility layers.
 
-### 渲染路径
+### Rendering path
 
 ```text
 LaTeX
   ↓
-MathJax TeX → MathML
+MathJax TeX → MathML conversion
   ↓
-Chromium 原生 MathML
+Native Chromium MathML
   ↓
-可选中、可搜索的 PDF 文本
+Selectable and searchable mathematical text in the PDF
 ```
 
-原生 MathML 无法排版某个公式时，才单独使用 SVG 兜底。SVG 公式视觉清晰，但内部字形是矢量路径，因此不能逐字选择。
+If a particular expression cannot be rendered reliably through native MathML, only that expression falls back to SVG. SVG remains visually sharp but its glyphs are vector paths rather than selectable text.
 
-### 复制公式
+### Copying formulas
 
-预览页每个公式带有“复制 LaTeX”按钮。PDF 中选择公式时通常得到 Unicode 数学文本；需要准确复用公式源时，应在预览页复制 LaTeX。
+Every formula in the preview includes **Copy LaTeX**. Selecting a formula in the PDF normally copies Unicode mathematical text, not the original TeX source; use the preview button when exact LaTeX is required.
 
----
+## PDF generation
 
-## PDF 生成流程
+When **Download PDF** is pressed, X2PDF:
 
-点击“直接下载 PDF”后，扩展依次执行：
+1. downloads allowed remote media and converts it to Data URLs;
+2. waits for images to decode;
+3. waits for the selected fonts;
+4. applies PrismJS highlighting;
+5. converts formulas to MathML;
+6. waits for formula, font, and image layout to stabilize;
+7. invokes `Page.printToPDF` through the Chrome DevTools Protocol;
+8. converts the returned Base64 PDF into a Blob;
+9. saves it through `chrome.downloads.download`.
 
-1. 将远程媒体下载并转换为 Data URL；
-2. 等待图片完成解码；
-3. 等待当前字体加载；
-4. 应用 PrismJS 代码高亮；
-5. 将公式转换为原生 MathML；
-6. 等待公式、字体和图片布局稳定；
-7. 使用 Chrome DevTools Protocol 调用 `Page.printToPDF`；
-8. 将返回的 Base64 PDF 转为 Blob；
-9. 使用 `chrome.downloads.download` 保存文件。
+The print stylesheet automatically hides:
 
-导出时会自动隐藏：
+- the preview toolbar;
+- code-copy buttons;
+- LaTeX-copy buttons;
+- diagnostic and status messages.
 
-- 顶部工具栏；
-- 复制代码按钮；
-- 复制 LaTeX 按钮；
-- 诊断和提示信息。
+## Permissions and privacy
 
----
+### Permission reference
 
-## 权限与隐私
-
-### 权限说明
-
-| 权限 | 用途 |
+| Permission / host | Why it is required |
 |---|---|
-| `activeTab` | 仅在用户点击扩展后访问当前标签页 |
-| `scripting` | 执行页面提取和滚动兜底脚本 |
-| `storage` | 暂存待预览文档及保存排版偏好 |
-| `debugger` | 捕获当前页面已请求的 Article JSON，并调用 `Page.printToPDF` |
-| `downloads` | 保存生成的 PDF |
-| `x.com` / `twitter.com` | 读取用户主动导出的页面 |
-| `pbs.twimg.com` | 下载并缓存文章媒体 |
-| `abs.twimg.com` | 选择 X 原生字体时尝试加载 Chirp |
+| `activeTab` | Accesses the current page only after the user clicks the extension |
+| `scripting` | Runs extraction and fallback collection scripts |
+| `storage` | Temporarily stores the document and saves display preferences |
+| `debugger` | Captures Article JSON responses and invokes `Page.printToPDF` |
+| `downloads` | Saves the generated PDF |
+| `x.com` / `twitter.com` | Reads the page explicitly selected for export |
+| `pbs.twimg.com` | Downloads and caches Article media |
+| `abs.twimg.com` | Attempts to load Chirp when the X-native font preset is selected |
 
-### 隐私设计
+### Privacy model
 
-- 不申请 `cookies` 权限；
-- 不读取或上传 X Cookie；
-- 不要求用户提供 `auth_token`；
-- 不使用远程后端服务处理文章；
-- Article JSON、预览数据和 PDF 生成均在本地浏览器中完成；
-- 临时 Article 标签页完成提取后自动关闭；
-- 待预览文档存放在 `chrome.storage.session`，不是永久云端存储；
-- 排版偏好存放在 `chrome.storage.local`。
+The standalone privacy statement is available in [PRIVACY.md](PRIVACY.md).
 
-### `debugger` 权限提示
 
-Chrome 会对使用 `debugger` 权限的扩展显示较醒目的警告。本项目使用该权限完成两件事：
+- No `cookies` permission
+- No upload of X cookies or authentication tokens
+- No external processing backend
+- Article parsing, preview rendering, and PDF generation happen in the local browser
+- Temporary Article tabs are closed after extraction
+- Pending preview data is stored in `chrome.storage.session`
+- Display preferences are stored in `chrome.storage.local`
+- Media caching accepts only selected HTTPS paths on `pbs.twimg.com`
 
-1. 读取当前 Article 页面已经收到的 JSON 响应；
-2. 调用 Chromium 的 `Page.printToPDF` 直接生成 PDF。
+### About the `debugger` warning
 
-扩展不会使用该权限执行发布、点赞、关注或修改账号数据的操作。
+Chrome displays a prominent warning for extensions requesting `debugger`. X2PDF uses it for two narrowly defined operations:
 
----
+1. inspecting JSON responses already received by the temporary Article tab;
+2. invoking Chromium's built-in `Page.printToPDF` command.
 
-## 项目结构
+It is not used to publish posts, interact with accounts, or bypass X access controls.
+
+## Project structure
 
 ```text
-x-longform-pdf-extension/
-├── manifest.json               # Manifest V3 配置与权限
-├── background.js               # 扩展入口、网络捕获、临时标签页、PDF 下载
-├── extractor.js                # DOM 兼容提取器与滚动采集
-├── structured-parser.js        # X Article / DraftJS / entity 解析器
-├── preview.html                # 预览页面
-├── preview.css                 # 阅读与打印样式、字体和代码主题
-├── preview.js                  # 文档渲染、设置、媒体缓存和导出控制
-├── code-highlighter.js         # PrismJS 语言归一化、检测和高亮
-├── formula-renderer.js         # TeX → MathML、MathML 清理及 SVG 兜底
-├── mathjax-config.js           # MathJax 本地配置
-├── clipboard-utils.js          # 代码、LaTeX 和诊断复制工具
-├── icons/                      # 扩展图标
+X2PDF/
+├── manifest.json               # Manifest V3 metadata and permissions
+├── background.js               # Entry point, network capture, temporary tabs, PDF download
+├── extractor.js                # DOM compatibility extraction and fallback scanning
+├── structured-parser.js        # Article, DraftJS, Markdown, entity, and media parser
+├── preview.html                # Standalone preview page
+├── preview.css                 # Screen and print layout, fonts, code themes
+├── preview.js                  # Rendering, preferences, media hydration, export control
+├── code-highlighter.js         # PrismJS language normalization and highlighting
+├── formula-renderer.js         # TeX → MathML conversion and SVG fallback
+├── mathjax-config.js           # Local MathJax configuration
+├── clipboard-utils.js          # Code, LaTeX, and diagnostic copy helpers
+├── icons/                      # Extension icons
 ├── vendor/
-│   ├── prism/                  # 本地 PrismJS 及语言组件
-│   └── mathjax/                # 本地 MathJax bundle
-├── tests/                      # Node、浏览器和 PDF 回归测试
+│   ├── prism/                  # Locally bundled PrismJS and language components
+│   └── mathjax/                # Locally bundled MathJax files
+├── tests/                      # Node, browser, and PDF regression tests
 ├── CHANGELOG.md
 ├── THIRD_PARTY_NOTICES.md
 ├── LICENSE
-└── README.md
+├── README.md                   # English documentation
+└── README.zh-CN.md             # Simplified Chinese documentation
 ```
 
----
+## Development
 
-## 本地开发
+The project uses plain JavaScript, HTML, and CSS. There is no required build step: edit the files and reload the unpacked extension.
 
-本项目使用原生 JavaScript、HTML 和 CSS，不需要构建步骤。修改源码后，可直接在扩展管理页点击“重新加载”。
+### Recommended environment
 
-### 推荐开发环境
+- Chrome, Chromium, or Edge 109+
+- Node.js 20+ for portable tests and repository validation
+- Python 3.10+ for the PDF regression test
+- Python 3 for packaging and the optional PDF regression test
+- Playwright and Poppler `pdftotext` only for the optional PDF text-layer regression
 
-- Chrome / Chromium / Edge 109+
-- Node.js 18+
-- Python 3.10+，仅用于 PDF 回归测试
-- Playwright，仅用于自动化浏览器测试
-- Poppler `pdftotext`，仅用于验证 PDF 文本层
 
-### 修改提取器
-
-Article 的主要语义解析位于：
-
-```text
-structured-parser.js
-```
-
-DOM 与动态页面兜底位于：
-
-```text
-extractor.js
-background.js → prepareArticleTab()
-```
-
-新增内容类型时，应优先扩展统一 Document AST 和 `preview.js` 的 `renderBlock()`，而不是把 X DOM 原样传到预览页。
-
-### 修改版本号
-
-发布新版本时至少同步修改：
-
-- `manifest.json` 中的 `version`；
-- `manifest.json` 中的 `description`，若功能发生明显变化；
-- `preview.html` 中展示的版本号；
-- `background.js` 和提取诊断中的 `extractorVersion`；
-- `README.md`；
-- `CHANGELOG.md`。
-
-### 打包
-
-在项目根目录执行：
+Install development dependencies and run the portable suite:
 
 ```bash
-zip -r x-longform-pdf-extension-v0.12.0.zip . \
-  -x '.git/*' \
-  -x '.DS_Store' \
-  -x '*.zip'
+npm install
+npm test
 ```
 
-上传 Chrome Web Store 前，建议另行检查商店政策、隐私披露、截图、图标和 `debugger` 权限说明。
+There is no runtime build step. After editing extension files, reload the unpacked extension from `chrome://extensions/`.
 
----
+### Parser responsibilities
 
-## 测试
+- Structured Article semantics: `structured-parser.js`
+- DOM and dynamic-page fallback: `extractor.js`
+- Network capture and temporary-tab orchestration: `background.js`
+- Preview block rendering: `preview.js`
 
-### 可直接运行的 Node 测试
+When adding a new content type, prefer extending the normalized document model and `renderBlock()` rather than passing X DOM nodes directly into the preview.
 
-以下测试只依赖 Node 内置模块和仓库源码：
+### Version updates
+
+For a release, review at least:
+
+- `manifest.json` → `version` and, when necessary, `description`
+- version text in `preview.html`
+- extractor version values in diagnostics
+- `README.md` and `README.zh-CN.md`
+- `CHANGELOG.md`
+
+### Packaging
 
 ```bash
-node tests/clipboard-utils.test.js
-node tests/code-copy-static.test.js
-node tests/formula-fallback.test.js
-node tests/formula-normalization.test.js
-node tests/structured-parser.test.js
+npm run package
 ```
 
-### JavaScript 语法检查
+The packaging script validates the runtime file list and creates `dist/X2PDF-v0.12.0.zip`. The archive excludes tests, repository-only documentation, generated assets, and development dependencies. Attach this ZIP to a GitHub Release instead of committing it to the source tree.
+
+## Testing
+
+Install the declared development dependencies and run the complete portable suite:
 
 ```bash
-node --check background.js
-node --check extractor.js
-node --check structured-parser.js
-node --check preview.js
-node --check code-highlighter.js
-node --check formula-renderer.js
-node --check clipboard-utils.js
+npm install
+npm test
 ```
 
-### 浏览器回归页面
+This performs:
 
-以下 HTML 文件用于手动或自动化检查代码高亮与公式布局：
+- manifest, localization, file-reference, and forbidden-font checks;
+- JavaScript syntax checks;
+- DraftJS, Markdown, media, formula, clipboard, and code-copy unit tests;
+- PrismJS highlighting tests;
+- MathJax conversion tests.
 
-```text
-tests/browser-highlight.html
-tests/mathjax-smoke.html
-tests/mathjax-regression.html
-tests/mathml-layout-regression.html
-```
-
-### PDF 公式回归测试
+Build the distributable extension after the tests:
 
 ```bash
-python tests/native-mathml-pdf.test.py
+npm run release:check
 ```
 
-该测试需要：
+Optional visual and PDF regression fixtures remain under `tests/`. `tests/native-mathml-pdf.test.py` additionally requires Chromium, Python Playwright, and `pdftotext`.
 
-- Python Playwright；
-- Chromium；
-- `pdftotext`；
-- 测试脚本中的 Chromium 路径与本机一致。
+GitHub Actions runs the portable tests and uploads a packaged ZIP for every push to `main`, pull request, and manual workflow run.
 
-### 维护者环境绑定测试
+## Publishing and releases
 
-当前 `code-highlighter.test.js` 与 `mathjax-node.test.js` 中包含维护环境使用的绝对依赖路径。迁移到通用 CI 前，建议增加 `package.json` 并将 PrismJS、MathJax 和 Playwright 声明为开发依赖，然后把测试改为普通包导入。
+Repository publication is documented in [PUBLISHING.md](PUBLISHING.md). With GitHub CLI authenticated, the maintainer can test, package, push, update repository metadata/topics, create the release, and upload the ZIP with:
 
----
+```bash
+./scripts/publish-release.sh 0.12.0
+```
 
-## 诊断与问题反馈
+Release notes for this version are stored in [`docs/releases/v0.12.0.md`](docs/releases/v0.12.0.md). Upload [`docs/images/social-preview.png`](docs/images/social-preview.png) in the GitHub repository settings as the social preview image.
 
-预览页提供“复制诊断”按钮。诊断内容包括：
+## Diagnostics and bug reports
 
-- 获取方式：结构化响应或 DOM fallback；
-- Article payload 候选路径；
-- 标题来源与验证状态；
-- DraftJS block 数量和类型；
-- Markdown、媒体、公式和未知 entity 数量；
-- 输出 block 数量；
-- 未解析媒体与公式；
-- 代码高亮语言统计；
-- 公式渲染器、可选中数量和失败数量；
-- 字体加载状态；
-- 当前排版设置。
+The preview includes **Copy diagnostics**. The output contains:
 
-诊断不会主动包含 Cookie，但提交 Issue 前仍建议快速检查内容中是否含有不希望公开的信息。
+- acquisition method: captured response or DOM fallback;
+- Article candidate path;
+- verified title source;
+- DraftJS block and entity counts;
+- Markdown, media, formula, and unknown-entity counts;
+- normalized output block counts;
+- unresolved media and formulas;
+- syntax-highlighting language statistics;
+- formula renderer and selectability statistics;
+- font-loading status;
+- current layout preferences.
 
-### 推荐 Issue 格式
+Diagnostics do not intentionally include cookies. Still, review the copied JSON before posting it publicly.
+
+### Suggested bug report
 
 ````markdown
-## 页面链接
+## X URL
 https://x.com/...
 
-## 问题类型
-- [ ] 标题错误
-- [ ] 代码缺失
-- [ ] 公式错误
-- [ ] 图片缺失或顺序错误
-- [ ] PDF 下载失败
-- [ ] 排版问题
+## Problem
+- [ ] Incorrect title
+- [ ] Missing or malformed code
+- [ ] Missing or malformed formula
+- [ ] Missing or misordered image
+- [ ] PDF download failure
+- [ ] Layout problem
 
-## 浏览器
-Chrome / Edge 版本：
-操作系统：
-扩展版本：
+## Environment
+- X2PDF version:
+- Chrome / Edge version:
+- Operating system:
 
-## 诊断 JSON
+## Diagnostics
 ```json
-粘贴“复制诊断”的结果
+Paste the result of “Copy diagnostics” here.
 ```
 
-## 截图或导出 PDF
-说明问题所在页码和预期结果。
+## Screenshots or PDF
+Mention the affected page and the expected result.
 ````
 
----
+Open an issue at: <https://github.com/troicc/X2PDF/issues>
 
-## 已知限制
+## Known limitations
 
-1. **X 前端和数据结构可能变化**  
-   项目已经尽量避免依赖固定 class 和 GraphQL operation 名称，但 X 更新后仍可能出现新 DOM 或 entity 变体。
+1. **X can change its frontend or payload structure.**  
+   X2PDF avoids fixed CSS classes and fixed GraphQL hashes where possible, but new DOM and entity variants may still require updates.
 
-2. **公式源并非总是直接存在于 Article JSON**  
-   某些 `LATEX` entity 只有引用键，需要 DOM 滚动兜底，因此公式文章可能比普通文章提取更慢。
+2. **Some formula entities contain only a reference key.**  
+   These Articles require rendered-page fallback collection and can take longer to process.
 
-3. **SVG 兜底公式不可逐字选择**  
-   大多数公式使用原生 MathML；只有无法兼容的单个公式才会降级为 SVG。
+3. **SVG fallback formulas are not selectable character by character.**  
+   Native MathML remains the default; SVG is used only for incompatible expressions.
 
-4. **视频和 GIF 不会作为动态内容嵌入 PDF**  
-   当前导出封面图和原始链接。
+4. **Video and GIF content is not embedded as animation.**  
+   X2PDF exports a thumbnail and source link.
 
-5. **普通帖子和 Longer Post 的准确度低于 Article**  
-   它们更依赖页面 DOM，因此容易受 X 前端更新影响。
+5. **Regular posts and Longer Posts are less stable than Articles.**  
+   They rely more heavily on the live X DOM.
 
-6. **受保护或不可访问内容**  
-   扩展只处理当前用户在浏览器中有权查看的内容，不绕过登录、订阅或访问限制。
+6. **Restricted content remains restricted.**  
+   X2PDF processes only content available to the current browser session and does not bypass login, subscription, deletion, or account restrictions.
 
-7. **Chirp 并非扩展内置字体**  
-   X 原生字体需要运行时访问 `abs.twimg.com`；失败时使用系统字体。
+7. **Chirp is not bundled.**  
+   The X-native preset loads it at runtime and falls back to system fonts if unavailable.
 
-8. **PDF 复制公式不等于复制原始 LaTeX**  
-   PDF 中通常复制为 Unicode 数学文本。准确 LaTeX 请使用预览页的“复制 LaTeX”。
+8. **Copied PDF math is not guaranteed to reproduce the original LaTeX.**  
+   Use **Copy LaTeX** in the preview for an exact source string.
 
-9. **超长代码的分页和换行存在取舍**  
-   开启代码换行可避免横向截断，但会改变视觉行数；关闭换行可能需要缩小字号。
+9. **Very long code lines involve a layout tradeoff.**  
+   Wrapping prevents horizontal clipping but changes the visual line count.
 
----
 
-## 路线图
+## Roadmap
 
-- [ ] 减少公式文章的全篇滚动次数，改为定向采集缺失公式
-- [ ] 支持 Thread 中同一作者的连续帖子合并
-- [ ] 导出 Markdown
-- [ ] 导出 EPUB
-- [ ] 文章目录与页内跳转
-- [ ] 更完善的表格分页
-- [ ] 自定义页边距与代码字号
-- [ ] 批量导出书签或收藏
-- [ ] 可移植的 npm 测试与 GitHub Actions CI
-- [ ] Chrome Web Store 发布准备
-- [ ] Firefox 兼容性评估
+- [ ] Replace repeated full-page formula scans with targeted missing-entity collection
+- [ ] Merge same-author posts into complete threads
+- [ ] Export Markdown
+- [ ] Export EPUB
+- [ ] Add a generated table of contents and internal PDF navigation
+- [ ] Improve table pagination
+- [ ] Add custom margins and code-font sizing
+- [ ] Add batch export for bookmarks or saved items
+- [x] Add portable npm-based tests and GitHub Actions CI
+- [x] Add English / Chinese UI localization
+- [ ] Prepare and review a Chrome Web Store submission
+- [ ] Evaluate Firefox compatibility
 
----
+## Contributing
 
-## 贡献
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md), the [Code of Conduct](CODE_OF_CONDUCT.md), and the [Security policy](SECURITY.md) before submitting substantial changes.
 
-欢迎提交 Issue 和 Pull Request。
+Please follow these principles:
 
-建议遵循以下原则：
+1. Prefer structured Article data; use DOM extraction only as fallback.
+2. Do not read or upload user cookies.
+3. Do not introduce runtime remote JavaScript.
+4. Include a diagnostic sample for new X DOM or entity variants.
+5. Add regression coverage for formula, code, or print-layout changes.
+6. Do not commit restricted font files.
+7. Update the changelog and documentation when behavior changes.
 
-1. 优先处理结构化 Article 数据，DOM 仅作为兜底；
-2. 不读取或上传用户 Cookie；
-3. 不引入运行时远程 JavaScript；
-4. 新增 X DOM 适配时提供诊断样本；
-5. 修改公式、代码或打印逻辑时补充回归测试；
-6. 不在仓库中提交受限制的字体文件；
-7. 更新功能时同步维护 `CHANGELOG.md` 和版本号。
+A useful pull request description includes:
 
-### Pull Request 建议内容
+- the affected X URL or a minimized fixture;
+- the root cause;
+- before / after behavior;
+- test instructions;
+- any new permissions or network access;
+- privacy implications;
+- documentation and changelog updates.
 
-- 问题链接或最小复现结构；
-- 修改原因；
-- 修改前后效果；
-- 测试方式；
-- 是否新增权限；
-- 是否影响隐私或远程请求；
-- 是否更新 README 和 Changelog。
+## FAQ
 
----
+### Why does X2PDF open a temporary Article tab?
 
-## 常见问题
+The extension needs to enable network inspection before navigation so it can capture the structured Article response. The temporary tab is closed after extraction.
 
-### 为什么点击扩展后会出现临时页面？
+### Why does the Article scroll from top to bottom?
 
-扩展需要在导航前开启 Network 捕获，才能取得 Article 的结构化 JSON。临时标签页提取完成后会自动关闭。
+Only incomplete formula or media entities trigger rendered-page fallback collection. The extension may scan the page several times until the result stabilizes.
 
-### 为什么页面会从上到下滚动多次？
+### Does X2PDF read my X cookies?
 
-只有结构化数据中的公式或媒体仍不完整时，扩展才会滚动采集懒加载内容。最多扫描三轮，并在结果稳定后提前结束。
+No. The manifest does not request the `cookies` permission, and X2PDF does not upload cookies or authentication tokens.
 
-### 扩展会读取我的 X Cookie 吗？
+### Why does Chrome say the extension can debug the browser?
 
-不会。Manifest 没有申请 `cookies` 权限，也不会把 Cookie 上传到服务器。
+That is the standard warning for `debugger`. X2PDF uses the permission to inspect Article JSON responses and invoke `Page.printToPDF`.
 
-### 为什么 Chrome 提示扩展可以调试浏览器？
+### Why are some formulas selectable while others are not?
 
-这是 `debugger` 权限的标准提示。本项目用它捕获 Article JSON 和调用 `Page.printToPDF`。
+Native MathML formulas are selectable. An expression that falls back to SVG is rendered as vector paths and cannot be selected character by character.
 
-### 为什么有些公式能选择，有些不能？
+### Why is copied math not LaTeX?
 
-原生 MathML 公式可以选择。只有浏览器无法正确排版的公式会使用 SVG 兜底，而 SVG 字形是路径，不能逐字选择。
+A PDF contains positioned mathematical text, not the original TeX source. Use **Copy LaTeX** in the preview.
 
-### 为什么 PDF 中复制公式不是 LaTeX？
+### Why can the X-native font fall back to another font?
 
-PDF 保存的是排版后的数学文本层，不是原始 TeX 源。请在预览页面点击“复制 LaTeX”。
+Chirp is not redistributed with the extension. Network failure, permission changes, or changes to X's static font URLs can trigger the system-font fallback.
 
-### 为什么 X 原生字体偶尔变成系统字体？
+### Why not use the normal browser print command?
 
-Chirp 不随扩展分发，而是运行时从 X 静态资源域加载。网络、权限或资源 URL 变化都可能触发回退。
+Printing the live page can include navigation, action buttons, recommendations, dynamic widgets, and unstable pagination. It also cannot reliably reconstruct DraftJS code and formula entities.
 
-### 为什么不直接使用浏览器的“打印网页”？
+### Is a backend server required?
 
-直接打印会混入 X 导航、互动按钮、推荐内容、动态控件和不稳定分页，也无法可靠恢复代码、公式和文章语义。
+No. Extraction, parsing, preview rendering, and PDF generation run locally in the browser.
 
-### 是否需要后端服务器？
-
-不需要。当前版本在浏览器本地完成提取、解析、预览和 PDF 生成。
-
----
-
-## 第三方组件
+## Third-party components
 
 ### PrismJS 1.30.0
 
-用于本地语法高亮，采用 MIT License。
+Used for local syntax highlighting under the MIT License.
 
 ### MathJax 3.2.1
 
-用于 TeX → MathML 转换和 SVG 兼容兜底，采用 Apache License 2.0。
+Used for TeX-to-MathML conversion and SVG compatibility fallback under the Apache License 2.0.
 
-完整声明见：
+See:
 
-```text
-THIRD_PARTY_NOTICES.md
-vendor/prism/LICENSE
-vendor/mathjax/LICENSE
-```
+- [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)
+- [`vendor/prism/LICENSE`](vendor/prism/LICENSE)
+- [`vendor/mathjax/LICENSE`](vendor/mathjax/LICENSE)
 
-扩展包不包含或分发 Chirp 字体文件。
+X2PDF does not include or redistribute Chirp font files.
 
----
+## License
 
-## 许可证
+X2PDF is released under the [MIT License](LICENSE).
 
-本项目使用 [MIT License](LICENSE)。
-
-```text
-Copyright (c) 2026
-```
-
-使用、修改和再分发本项目时，请保留许可证和第三方组件声明。
+When redistributing the project, retain the license and third-party notices.

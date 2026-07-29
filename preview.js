@@ -1,3 +1,5 @@
+const t = (key, vars = {}) => globalThis.XPDFI18n?.t(key, vars) ?? key;
+
 const elements = {
   document: document.getElementById("document"),
   emptyState: document.getElementById("emptyState"),
@@ -57,7 +59,7 @@ async function initialize() {
   ]);
 
   if (exportError || !pendingXDocument) {
-    showError(exportError || "没有找到待导出的内容。请返回 X 页面重新提取。");
+    showError(exportError || t("emptyMessage"));
     return;
   }
 
@@ -69,7 +71,7 @@ async function initialize() {
   applyCodeHighlighting();
 
   elements.printButton.disabled = true;
-  if (elements.exportStatus) elements.exportStatus.textContent = "正在缓存图片、加载字体并排版公式…";
+  if (elements.exportStatus) elements.exportStatus.textContent = t("caching");
   await Promise.all([hydrateRemoteMedia(), ensureSelectedFonts(), typesetFormulas()]);
   elements.printButton.disabled = false;
   if (elements.exportStatus) elements.exportStatus.textContent = readyStatusMessage();
@@ -87,30 +89,30 @@ function renderQualityStatus(doc) {
   let level = "ok";
 
   if (acquisition.method === "captured-response" && titleInfo.verified === true) {
-    messages.push("已从 X 后端 Article 响应取得 title 与 DraftJS content_state。标题来源：article.title。");
-    messages.push(`输出：${output.heading || 0} 个标题、${output.blockquote || 0} 个引用、${output.code || 0} 个代码块、${output.formula || 0} 个公式、${output.image || 0} 张图片。`);
+    messages.push(t("structuredReady"));
+    messages.push(t("outputSummary", { heading: output.heading || 0, quote: output.blockquote || 0, code: output.code || 0, formula: output.formula || 0, image: output.image || 0 }));
     if (entities.markdown != null || entities.formula != null) {
-      messages.push(`Markdown 实体：${entities.markdown || 0}；公式实体：${entities.formula || 0}。`);
+      messages.push(t("entitySummary", { markdown: entities.markdown || 0, formula: entities.formula || 0 }));
     }
   } else {
     level = "warning";
-    messages.push("当前使用 DOM 兼容模式，未验证 article.title/content_state；复杂代码、媒体顺序或标题可能不完整。");
+    messages.push(t("domFallback"));
   }
 
   const gaps = Array.isArray(completeness.suspectedContentGaps) ? completeness.suspectedContentGaps : [];
   if (completeness.status === "warning" || gaps.length) {
     level = "warning";
-    messages.push(`完整性检查发现 ${gaps.length || 1} 处疑似内容缺口，请先检查预览。`);
+    messages.push(t("gaps", { count: gaps.length || 1 }));
   }
   const unresolved = Array.isArray(diagnostics.unresolvedMedia) ? diagnostics.unresolvedMedia.length : 0;
   if (unresolved) {
     level = "warning";
-    messages.push(`仍有 ${unresolved} 个媒体实体未解析。`);
+    messages.push(t("unresolvedMedia", { count: unresolved }));
   }
   const unresolvedFormulas = Array.isArray(diagnostics.unresolvedFormulas) ? diagnostics.unresolvedFormulas.length : 0;
   if (unresolvedFormulas) {
     level = "warning";
-    messages.push(`仍有 ${unresolvedFormulas} 个 LATEX 公式实体未解析。`);
+    messages.push(t("unresolvedFormulas", { count: unresolvedFormulas }));
   }
 
   elements.qualityBanner.hidden = false;
@@ -124,9 +126,9 @@ function renderDocument(doc) {
   elements.document.classList.add("font-x-native");
   elements.document.dataset.codeTheme = "x-light";
 
-  const cleanTitle = doc.metadata?.title || "X 长文";
+  const cleanTitle = doc.metadata?.title || t("defaultTitle");
   elements.title.textContent = cleanTitle;
-  originalDocumentTitle = `${cleanTitle} - PDF 预览`;
+  originalDocumentTitle = `${cleanTitle} - ${t("previewSuffix")}`;
   document.title = originalDocumentTitle;
 
   renderMetadata(doc.metadata || {});
@@ -147,7 +149,7 @@ function renderMetadata(metadata) {
   if (metadata.publishedAt) {
     const date = new Date(metadata.publishedAt);
     if (!Number.isNaN(date.getTime())) {
-      elements.metadata.append(createMetaSpan(new Intl.DateTimeFormat("zh-CN", {
+      elements.metadata.append(createMetaSpan(new Intl.DateTimeFormat(globalThis.XPDFI18n?.locale === "zh" ? "zh-CN" : "en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",
@@ -252,7 +254,7 @@ function renderBlock(block) {
       };
       const fallback = document.createElement("code");
       fallback.className = "formula-source-fallback";
-      fallback.textContent = target.__xpdfFormula.latex || stripMathMlText(target.__xpdfFormula.mathml) || "公式无法解析";
+      fallback.textContent = target.__xpdfFormula.latex || stripMathMlText(target.__xpdfFormula.mathml) || t("formulaUnavailable");
       target.append(fallback);
 
       if (target.__xpdfFormula.latex) {
@@ -260,7 +262,7 @@ function renderBlock(block) {
         copyButton.type = "button";
         copyButton.className = "formula-copy-button";
         copyButton.dataset.screenOnly = "true";
-        copyButton.textContent = "复制 LaTeX";
+        copyButton.textContent = t("copyLatex");
         copyButton.addEventListener("click", () => copyFormulaLatex(target, copyButton));
         figure.append(copyButton);
       }
@@ -281,16 +283,16 @@ function renderBlock(block) {
       const languageLabel = document.createElement("span");
       languageLabel.className = "code-language-label";
       languageLabel.dataset.language = String(block.language || "").trim();
-      languageLabel.textContent = block.language || "代码";
+      languageLabel.textContent = block.language || t("code");
       toolbar.append(languageLabel);
 
       const copyButton = document.createElement("button");
       copyButton.type = "button";
       copyButton.className = "code-copy-button";
       copyButton.dataset.screenOnly = "true";
-      copyButton.textContent = "复制";
-      copyButton.title = "复制完整代码";
-      copyButton.setAttribute("aria-label", `复制${block.language ? ` ${block.language}` : ""}代码`);
+      copyButton.textContent = t("copy");
+      copyButton.title = t("copyFullCode");
+      copyButton.setAttribute("aria-label", t("copyCodeAria", { language: block.language ? ` ${block.language}` : "" }));
       copyButton.addEventListener("click", () => copyCodeText(rawCode, copyButton));
       toolbar.append(copyButton);
       wrapper.append(toolbar);
@@ -372,7 +374,7 @@ function renderMedia(block) {
     const image = document.createElement("img");
     image.dataset.remoteSrc = block.poster;
     image.src = block.poster;
-    image.alt = block.caption || block.mediaType || "媒体";
+    image.alt = block.caption || block.mediaType || t("media");
     image.referrerPolicy = "no-referrer";
     image.addEventListener("error", () => image.remove(), { once: true });
     figure.append(image);
@@ -389,7 +391,7 @@ function renderMedia(block) {
     link.href = block.sourceUrl;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
-    link.textContent = block.mediaType === "gif" ? "在 X 查看 GIF" : "在 X 查看视频";
+    link.textContent = block.mediaType === "gif" ? t("viewGif") : t("viewVideo");
     figure.append(link);
   }
   return figure;
@@ -432,7 +434,7 @@ function renderEmbeddedPost(block) {
     link.href = block.sourceUrl;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
-    link.textContent = "在 X 查看原帖";
+    link.textContent = t("viewPost");
     card.append(link);
   }
   return card;
@@ -476,7 +478,7 @@ function renderPoll(block) {
   const box = document.createElement("section");
   box.className = "poll-block embed-block";
   const title = document.createElement("strong");
-  title.textContent = "投票";
+  title.textContent = t("poll");
   box.append(title);
   const list = document.createElement("ul");
   for (const option of Array.isArray(block.options) ? block.options : []) {
@@ -528,13 +530,13 @@ function renderSource(source) {
   if (source.capturedAt) {
     const date = new Date(source.capturedAt);
     if (!Number.isNaN(date.getTime())) {
-      elements.capturedAt.textContent = `提取时间：${new Intl.DateTimeFormat("zh-CN", {
+      elements.capturedAt.textContent = t("capturedAt", { date: new Intl.DateTimeFormat(globalThis.XPDFI18n?.locale === "zh" ? "zh-CN" : "en-US", {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
         hour: "2-digit",
         minute: "2-digit"
-      }).format(date)}`;
+      }).format(date) });
     }
   }
 }
@@ -547,7 +549,7 @@ function bindControls() {
   elements.fontFamily.addEventListener("change", async () => {
     applyFontFamily(elements.fontFamily.value);
     schedulePreferenceSave();
-    if (elements.exportStatus) elements.exportStatus.textContent = "正在加载所选字体…";
+    if (elements.exportStatus) elements.exportStatus.textContent = t("loadingFont");
     await ensureSelectedFonts();
     if (elements.exportStatus) elements.exportStatus.textContent = readyStatusMessage();
   });
@@ -676,7 +678,7 @@ function typesetFormulas(options = {}) {
     }
 
     if (!globalThis.XPDFFormulaRenderer?.render) {
-      for (const target of targets) markFormulaFailure(target, "公式渲染器未加载");
+      for (const target of targets) markFormulaFailure(target, t("formulaRendererMissing"));
       diagnostics.failed = targets.length;
       renderingDiagnostics.formulas = diagnostics;
       return diagnostics;
@@ -689,7 +691,7 @@ function typesetFormulas(options = {}) {
       diagnostics.formats[format] = (diagnostics.formats[format] || 0) + 1;
       if (!source) {
         diagnostics.failed += 1;
-        markFormulaFailure(target, "公式源为空");
+        markFormulaFailure(target, t("formulaEmpty"));
         continue;
       }
       if (!force && target.dataset.formulaRendered === "true") {
@@ -713,7 +715,7 @@ function typesetFormulas(options = {}) {
         if (result.selectable) diagnostics.selectable += 1;
         else diagnostics.nonSelectable += 1;
 
-        target.setAttribute("aria-label", formula.latex || stripMathMlText(formula.mathml) || "数学公式");
+        target.setAttribute("aria-label", formula.latex || stripMathMlText(formula.mathml) || t("mathFormula"));
         target.dataset.formulaRendered = "true";
         target.classList.remove("formula-render-failed");
         target.removeAttribute("title");
@@ -748,25 +750,25 @@ function typesetFormulas(options = {}) {
 function updateFormulaExportStatus(diagnostics) {
   if (!elements.exportStatus || !diagnostics?.total) return;
   if (diagnostics.failed) {
-    elements.exportStatus.textContent = `${diagnostics.failed} 个公式渲染失败，请检查预览。`;
+    elements.exportStatus.textContent = t("formulaFailures", { count: diagnostics.failed });
     return;
   }
   if (diagnostics.nonSelectable) {
-    elements.exportStatus.textContent = `${diagnostics.selectable}/${diagnostics.total} 个公式可选中；${diagnostics.nonSelectable} 个使用 SVG 兼容模式。`;
+    elements.exportStatus.textContent = t("formulaSelectableMixed", { selectable: diagnostics.selectable, total: diagnostics.total, nonSelectable: diagnostics.nonSelectable });
     return;
   }
-  elements.exportStatus.textContent = `${diagnostics.total} 个公式已使用原生 MathML 排版，可选中并复制。`;
+  elements.exportStatus.textContent = t("formulaSelectableAll", { total: diagnostics.total });
 }
 
 async function copyFormulaLatex(target, button) {
   const latex = target?.__xpdfFormula?.latex || "";
   if (!latex) return;
-  await copyTextWithButtonFeedback(latex, button, "复制 LaTeX");
+  await copyTextWithButtonFeedback(latex, button, t("copyLatex"));
 }
 
 async function copyCodeText(rawCode, button) {
   if (typeof rawCode !== "string" || !rawCode) return;
-  await copyTextWithButtonFeedback(rawCode, button, "复制");
+  await copyTextWithButtonFeedback(rawCode, button, t("copy"));
 }
 
 async function copyTextWithButtonFeedback(text, button, idleLabel) {
@@ -784,7 +786,7 @@ async function copyTextWithButtonFeedback(text, button, idleLabel) {
   }
 
   if (button) {
-    button.textContent = copied ? "已复制" : "复制失败";
+    button.textContent = copied ? t("copied") : t("copyFailed");
     button.classList.add(copied ? "copy-success" : "copy-error");
     button.setAttribute("aria-live", "polite");
     setTimeout(() => {
@@ -800,13 +802,13 @@ function markFormulaFailure(target, message) {
   const formula = target.__xpdfFormula || {};
   const fallback = document.createElement("code");
   fallback.className = "formula-source-fallback";
-  fallback.textContent = formula.latex || stripMathMlText(formula.mathml) || "公式无法解析";
+  fallback.textContent = formula.latex || stripMathMlText(formula.mathml) || t("formulaUnavailable");
   target.replaceChildren(fallback);
   target.classList.add("formula-render-failed");
   target.dataset.formulaRendered = "false";
   target.dataset.formulaSelectable = "true";
   target.dataset.formulaRenderer = "source-fallback";
-  target.title = message || "公式渲染失败";
+  target.title = message || t("formulaRenderFailed");
 }
 
 function stripMathMlText(mathml) {
@@ -833,17 +835,17 @@ async function copyDiagnostics() {
   const copied = await copyTextWithButtonFeedback(
     JSON.stringify(data, null, 2),
     elements.diagnosticsButton,
-    "复制诊断"
+    t("copyDiagnostics")
   );
   if (!copied && elements.diagnosticsButton) {
-    elements.diagnosticsButton.title = "浏览器拒绝了剪贴板写入，请手动选择诊断文本。";
+    elements.diagnosticsButton.title = t("clipboardDenied");
   }
 }
 
 async function printDocument() {
   elements.printButton.disabled = true;
-  elements.printButton.textContent = "正在生成 PDF…";
-  if (elements.exportStatus) elements.exportStatus.textContent = "正在等待图片和字体加载…";
+  elements.printButton.textContent = t("generatingPdf");
+  if (elements.exportStatus) elements.exportStatus.textContent = t("waitingAssets");
 
   try {
     applyCodeHighlighting();
@@ -852,7 +854,7 @@ async function printDocument() {
     await typesetFormulas({ force: true });
     await waitForImages();
     document.title = getPrintableTitle();
-    if (elements.exportStatus) elements.exportStatus.textContent = "正在调用 Chrome PDF 引擎…";
+    if (elements.exportStatus) elements.exportStatus.textContent = t("invokingPdf");
 
     const response = await chrome.runtime.sendMessage({
       type: "EXPORT_PDF",
@@ -860,23 +862,23 @@ async function printDocument() {
       pageSize: elements.pageSize.value === "Letter" ? "Letter" : "A4"
     });
 
-    if (!response?.ok) throw new Error(response?.error || "PDF 生成失败。");
-    if (elements.exportStatus) elements.exportStatus.textContent = `已开始下载：${response.filename || "PDF"}`;
-    elements.printButton.textContent = "已下载";
+    if (!response?.ok) throw new Error(response?.error || t("pdfFailed"));
+    if (elements.exportStatus) elements.exportStatus.textContent = t("downloadStarted", { filename: response.filename || "PDF" });
+    elements.printButton.textContent = t("downloaded");
   } catch (error) {
     if (elements.exportStatus) elements.exportStatus.textContent = error instanceof Error ? error.message : String(error);
-    elements.printButton.textContent = "下载失败，重试";
+    elements.printButton.textContent = t("retryDownload");
   } finally {
     document.title = originalDocumentTitle;
     setTimeout(() => {
       elements.printButton.disabled = false;
-      if (elements.printButton.textContent === "已下载") elements.printButton.textContent = "直接下载 PDF";
+      if (elements.printButton.textContent === t("downloaded")) elements.printButton.textContent = t("downloadPdf");
     }, 1200);
   }
 }
 
 function getPrintableTitle() {
-  return (elements.title.textContent || currentDocument?.metadata?.title || "X 长文")
+  return (elements.title.textContent || currentDocument?.metadata?.title || t("defaultTitle"))
     .replace(/[\\/:*?"<>|]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
@@ -917,7 +919,7 @@ async function hydrateOneImage(image) {
 
   try {
     const response = await chrome.runtime.sendMessage({ type: "FETCH_MEDIA", url: source });
-    if (!response?.ok || !response.dataUrl) throw new Error(response?.error || "媒体缓存失败");
+    if (!response?.ok || !response.dataUrl) throw new Error(response?.error || t("mediaCacheFailed"));
     image.src = response.dataUrl;
     await decodeImage(image);
     image.dataset.hydrated = "true";
@@ -940,14 +942,14 @@ function decodeImage(image, timeout = 12000) {
     return typeof image.decode === "function" ? image.decode().catch(() => {}) : Promise.resolve();
   }
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => { cleanup(); reject(new Error("图片加载超时")); }, timeout);
+    const timer = setTimeout(() => { cleanup(); reject(new Error(t("imageTimeout"))); }, timeout);
     const cleanup = () => {
       clearTimeout(timer);
       image.removeEventListener("load", onLoad);
       image.removeEventListener("error", onError);
     };
     const onLoad = () => { cleanup(); resolve(); };
-    const onError = () => { cleanup(); reject(new Error("图片加载失败")); };
+    const onError = () => { cleanup(); reject(new Error(t("imageFailed"))); };
     image.addEventListener("load", onLoad, { once: true });
     image.addEventListener("error", onError, { once: true });
   });
@@ -995,16 +997,16 @@ function readyStatusMessage() {
   if (fontMessage) messages.push(fontMessage);
   const formulas = renderingDiagnostics.formulas || {};
   if (formulas.total) {
-    if (formulas.failed) messages.push(`${formulas.failed} 个公式渲染失败。`);
-    else if (formulas.nonSelectable) messages.push(`${formulas.selectable || 0}/${formulas.total} 个公式可选中，${formulas.nonSelectable} 个为 SVG 兼容模式。`);
-    else messages.push(`${formulas.total} 个公式已使用原生 MathML 排版，可选中并复制。`);
+    if (formulas.failed) messages.push(t("formulaFailedShort", { count: formulas.failed }));
+    else if (formulas.nonSelectable) messages.push(t("formulaSelectableShort", { selectable: formulas.selectable || 0, total: formulas.total, nonSelectable: formulas.nonSelectable }));
+    else messages.push(t("formulaNativeShort", { total: formulas.total }));
   }
   return messages.join(" ");
 }
 
 function fontStatusMessage() {
   if (elements.fontFamily?.value !== "x-native") return "";
-  if (renderingDiagnostics.font.chirpLoaded === false) return "Chirp 未能加载，当前使用系统无衬线回退字体。";
+  if (renderingDiagnostics.font.chirpLoaded === false) return t("chirpFallback");
   return "";
 }
 

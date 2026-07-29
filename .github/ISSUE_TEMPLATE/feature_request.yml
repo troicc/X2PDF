@@ -1,0 +1,22 @@
+name: Feature request
+description: Suggest a new supported format, export option, or workflow.
+title: "[Feature] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: Describe the workflow or limitation, not only the proposed implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: examples
+    attributes:
+      label: Example URLs, formats, or mockups

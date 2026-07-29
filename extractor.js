@@ -1,4 +1,7 @@
 (() => {
+  const isZh = String(globalThis.chrome?.i18n?.getUILanguage?.() || navigator.language || "").toLowerCase().startsWith("zh");
+  const l = (en, zh) => isZh ? zh : en;
+
   const OWNER_TYPES = new Set([
     "blockquote", "list", "code", "table", "figure", "media", "embedded_post", "link_card"
   ]);
@@ -17,7 +20,7 @@
     return { kind: "document", document: documentData };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    const loading = /尚未加载|等待页面|正文区域|加载完成/.test(message);
+    const loading = /not finished loading|wait and try again|body has not finished|尚未加载|等待页面|正文区域|加载完成/i.test(message);
     return { kind: loading ? "loading" : "error", message };
   }
 
@@ -84,7 +87,7 @@
   function extractArticle(page) {
     const bodyRoot = findArticleBody();
     if (!bodyRoot) {
-      throw new Error("X Article 正文尚未加载完成，请等待页面加载后重试。");
+      throw new Error(l("The X Article body has not finished loading. Wait and try again.", "X Article 正文尚未加载完成，请等待页面加载后重试。"));
     }
 
     const pageRoot = document.querySelector("main") || bodyRoot.closest("article") || document.body;
@@ -96,7 +99,7 @@
     const extraction = extractBlocks(bodyRoot, { title, coverSrc: cover?.src });
 
     if (extraction.blocks.length === 0) {
-      throw new Error("找到了 X Article 页面，但没有识别到可导出的正文内容。");
+      throw new Error(l("The X Article page was found, but no exportable body content was detected.", "找到了 X Article 页面，但没有识别到可导出的正文内容。"));
     }
 
     return buildDocument({
@@ -115,7 +118,7 @@
   function extractPost(page) {
     const postRoot = findPostRoot(page.postId);
     if (!postRoot) {
-      throw new Error("帖子正文区域尚未加载完成，请等待页面加载后重试。");
+      throw new Error(l("The post body has not finished loading. Wait and try again.", "帖子正文区域尚未加载完成，请等待页面加载后重试。"));
     }
 
     const authorHandle = detectAuthorHandle(postRoot, page.path);
@@ -125,7 +128,7 @@
     const rawText = normalizeText(tweetText?.textContent || "");
     const title = rawText
       ? rawText.length > 90 ? `${rawText.slice(0, 90).trim()}…` : rawText
-      : cleanTitle(document.title, authorHandle, authorName) || "X 帖子";
+      : cleanTitle(document.title, authorHandle, authorName) || l("X Post", "X 帖子");
 
     const blocks = [];
     if (tweetText) {
@@ -150,7 +153,7 @@
 
     const finalBlocks = deduplicateBlocks(blocks);
     if (finalBlocks.length === 0) {
-      throw new Error("当前帖子没有识别到可导出的文字、媒体或嵌入内容。");
+      throw new Error(l("No exportable text, media, or embedded content was detected in this post.", "当前帖子没有识别到可导出的文字、媒体或嵌入内容。"));
     }
 
     return buildDocument({
@@ -312,7 +315,7 @@
     }
 
     candidates.sort((a, b) => b.score - a.score || b.text.length - a.text.length);
-    return candidates[0]?.text || "X 长文";
+    return candidates[0]?.text || l("X Article", "X 长文");
 
     function addTitleCandidate(node, baseScore) {
       const raw = normalizeText(node.textContent || "");
@@ -919,7 +922,7 @@
       mediaType,
       poster,
       sourceUrl,
-      caption: mediaType === "gif" ? "GIF" : "视频"
+      caption: mediaType === "gif" ? "GIF" : l("Video", "视频")
     };
   }
 
@@ -1152,7 +1155,7 @@
           mediaType: media.mediaType,
           poster: src,
           sourceUrl: safeAbsoluteHttpUrl(media.sourceUrl),
-          caption: media.mediaType === "gif" ? "GIF" : "视频"
+          caption: media.mediaType === "gif" ? "GIF" : l("Video", "视频")
         };
       } else {
         block = {

@@ -2,6 +2,9 @@
   "use strict";
 
   const CODE_INTRO_RE = /(?:would look like this|code(?: changes)? (?:is|are) shown below|pseudocode below|implementation(?: is|:)|rewrite(?:s| the)? .+ from|reparameterized form is|compute all .+ at once|following code|代码如下|伪代码如下)\s*[:：]?$/i;
+  const localeIsZh = String(global?.chrome?.i18n?.getUILanguage?.() || "").toLowerCase().startsWith("zh");
+  const l = (en, zh) => localeIsZh ? zh : en;
+
   const SAFE_MEDIA_PATHS = ["/media/", "/amplify_video_thumb/", "/ext_tw_video_thumb/", "/tweet_video_thumb/"];
 
   function parseCapturedArticle({ payloads, articleUrl, expectedId, fallbackDocument }) {
@@ -18,7 +21,7 @@
     if (!selected) {
       return {
         ok: false,
-        error: "未在 X 后端响应中找到包含 title 和 content_state 的 Article 数据。",
+        error: l("No Article object containing title and content_state was found in the captured X responses.", "未在 X 后端响应中找到包含 title 和 content_state 的 Article 数据。"),
         diagnostics: {
           acquisition: {
             method: "captured-response",
@@ -34,7 +37,7 @@
     if (!contentState || !Array.isArray(contentState.blocks)) {
       return {
         ok: false,
-        error: "已找到 Article 数据，但 content_state 无法解析。",
+        error: l("Article data was found, but content_state could not be parsed.", "已找到 Article 数据，但 content_state 无法解析。"),
         diagnostics: {
           acquisition: {
             method: "captured-response",
@@ -91,7 +94,7 @@
     if (!title) {
       return {
         ok: false,
-        error: "Article 后端数据中没有可靠的 title 字段。",
+        error: l("The Article payload does not contain a reliable title field.", "Article 后端数据中没有可靠的 title 字段。"),
         diagnostics: {
           acquisition: {
             method: "captured-response",
@@ -1358,7 +1361,7 @@
     const formulaGaps = (unresolvedFormulas || []).map((item) => ({
       kind: "formula",
       blockKey: item.blockKey || "",
-      text: "LATEX entity 未能解析",
+      text: l("The LaTeX entity could not be resolved", "LATEX entity 未能解析"),
       entityReference: item.entityReference || null
     }));
     return {

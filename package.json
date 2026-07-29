@@ -1,0 +1,30 @@
+{
+  "name": "x2pdf",
+  "version": "0.12.0",
+  "private": true,
+  "description": "A local-first Chromium extension that exports X Articles and posts to structured, searchable PDFs.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/troicc/X2PDF.git"
+  },
+  "bugs": {
+    "url": "https://github.com/troicc/X2PDF/issues"
+  },
+  "homepage": "https://github.com/troicc/X2PDF#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "check": "node scripts/check-repository.js",
+    "test:unit": "node tests/i18n.test.js && node tests/clipboard-utils.test.js && node tests/code-copy-static.test.js && node tests/code-highlighter.test.js && node tests/formula-fallback.test.js && node tests/formula-normalization.test.js && node tests/structured-parser.test.js",
+    "test:math": "node tests/mathjax-node.test.js",
+    "test": "npm run check && npm run test:unit && npm run test:math",
+    "package": "python3 scripts/package_extension.py",
+    "release:check": "npm test && npm run package"
+  },
+  "devDependencies": {
+    "mathjax-full": "3.2.2",
+    "prismjs": "1.30.0"
+  }
+}

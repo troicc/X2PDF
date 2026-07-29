@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>X2PDF Preview Demo</title>
+<link rel="stylesheet" href="../../preview.css">
+<style>
+  body { background:#f3f6f8; }
+  .app-toolbar { position: sticky; top:0; z-index:10; }
+  .demo-paper { display:block !important; }
+  .formula-block { margin:1.4rem 0; }
+  .formula-render-target { overflow:visible; }
+  .formula-render-target math { font-size:1.2rem; }
+  .demo-note { color:#536471; font-size:10pt; margin-top:.2rem; }
+</style>
+</head>
+<body>
+<header class="app-toolbar">
+  <div class="brand"><div class="brand-mark">X</div><div><strong>X2PDF</strong><span>Structured Article preview v0.12</span></div></div>
+  <div class="toolbar-controls">
+    <label><span>Page</span><select><option>A4</option></select></label>
+    <label><span>Font</span><select><option>X native (Chirp)</option></select></label>
+    <label><span>Text size</span><select><option>Standard</option></select></label>
+    <label><span>Code theme</span><select><option>X Light</option></select></label>
+    <label class="check-label"><input type="checkbox" checked><span>Images</span></label>
+    <label class="check-label"><input type="checkbox" checked><span>Embeds</span></label>
+    <button class="secondary-button">Copy diagnostics</button><button class="primary-button">Download PDF</button>
+  </div>
+</header>
+<div class="print-warning"><strong>Direct PDF export</strong><span>Chrome lays out and downloads the PDF in the background.</span></div>
+<div class="quality-banner">The title and DraftJS content_state were captured from X's Article response. Output: 5 headings, 2 quotes, 3 code blocks, 4 formulas, and 8 images.</div>
+<main class="app-shell">
+<article class="paper demo-paper" data-code-theme="x-light">
+<header class="document-header"><h1>From GPT-2 to Modern Linear Attention</h1><div class="metadata"><span>Waterloo Intern</span><span>@waterloo_intern</span><span>July 27, 2026</span></div></header>
+<div class="content">
+<p>Structured extraction preserves headings, media order, source code, and mathematical notation instead of printing the live X interface.</p>
+<h2>Selectable code with syntax highlighting</h2>
+<figure class="code-block" data-language="python">
+<figcaption class="code-block-toolbar"><span class="code-language-label">python</span><button class="code-copy-button">Copy</button></figcaption>
+<pre><code class="language-python"><span class="token keyword">def</span> <span class="token function">linear_attention</span>(q, k, v):
+    <span class="token comment"># Associative order avoids materializing N × N scores.</span>
+    state = k.transpose(-1, -2) @ v
+    <span class="token keyword">return</span> q @ state</code></pre>
+</figure>
+<h2>Selectable mathematical formulas</h2>
+<p>The default formula path uses native MathML, so variables and symbols remain selectable in the PDF.</p>
+<figure class="formula-block"><button class="formula-copy-button">Copy LaTeX</button><div class="formula-render-target">
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msub><mi>f</mi><mi>R</mi></msub><mo>(</mo><mi>r</mi><mo>)</mo><mo>=</mo><mfrac><mn>2</mn><mrow><msup><mn>2</mn><mfrac><mi>d</mi><mn>2</mn></mfrac></msup><mi>Γ</mi><mo>(</mo><mfrac><mi>d</mi><mn>2</mn></mfrac><mo>)</mo></mrow></mfrac><msup><mi>r</mi><mrow><mi>d</mi><mo>−</mo><mn>1</mn></mrow></msup><mi>exp</mi><mo>(</mo><mo>−</mo><mfrac><msup><mi>r</mi><mn>2</mn></msup><mn>2</mn></mfrac><mo>)</mo></mrow></math>
+</div></figure>
+<h2>Direct PDF download</h2>
+<p>Images are cached, fonts and formulas are allowed to settle, then Chromium's PDF engine generates the file without opening the system print dialog.</p>
+</div>
+<footer class="source-footer"><span>Source</span><a>https://x.com/example/article/123</a><small>Captured: 07/29/2026, 3:54 PM</small></footer>
+</article>
+</main>
+</body></html>

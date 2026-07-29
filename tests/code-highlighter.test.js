@@ -1,10 +1,10 @@
 const assert = require("assert");
 
-const Prism = require("/usr/local/slides_js/node_modules/prismjs");
-require("/usr/local/slides_js/node_modules/prismjs/components/prism-python");
-require("/usr/local/slides_js/node_modules/prismjs/components/prism-bash");
-require("/usr/local/slides_js/node_modules/prismjs/components/prism-json");
-require("/usr/local/slides_js/node_modules/prismjs/components/prism-typescript");
+const Prism = require("prismjs");
+require("prismjs/components/prism-python");
+require("prismjs/components/prism-bash");
+require("prismjs/components/prism-json");
+require("prismjs/components/prism-typescript");
 global.Prism = Prism;
 require("../code-highlighter.js");
 

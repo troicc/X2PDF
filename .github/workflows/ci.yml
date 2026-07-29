@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install test dependencies
+        run: npm install --no-package-lock
+
+      - name: Run repository and unit tests
+        run: npm test
+
+      - name: Build extension ZIP
+        run: npm run package
+
+      - name: Upload extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: X2PDF-${{ github.sha }}
+          path: dist/X2PDF-v*.zip
+          if-no-files-found: error

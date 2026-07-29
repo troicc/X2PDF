@@ -1,0 +1,52 @@
+{
+  "appName": {
+    "message": "X2PDF — X to PDF"
+  },
+  "appDescription": {
+    "message": "Export X Articles and posts to structured PDFs with highlighted code, selectable formulas, media, font options, and direct download."
+  },
+  "actionTitle": {
+    "message": "Export this X Article or post to PDF"
+  },
+  "errorInvalidTab": {
+    "message": "The current tab URL is invalid."
+  },
+  "errorOpenX": {
+    "message": "Open an X Article, longer post, or post detail page first."
+  },
+  "errorNoReadableContent": {
+    "message": "No exportable content was found. Wait for the page to finish loading and try again."
+  },
+  "errorCreateCaptureTab": {
+    "message": "Unable to create the temporary Article capture tab."
+  },
+  "errorReadPage": {
+    "message": "Unable to read the current X page."
+  },
+  "errorUnsupportedMedia": {
+    "message": "Unsupported media URL."
+  },
+  "errorMediaDownload": {
+    "message": "Image download failed: $1",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorNotImage": {
+    "message": "The returned content is not an image."
+  },
+  "errorImageTooLarge": {
+    "message": "One image exceeds 18 MB."
+  },
+  "errorPreviewTab": {
+    "message": "Unable to identify the PDF preview tab."
+  },
+  "errorNoPdfData": {
+    "message": "Chrome did not return PDF data."
+  },
+  "defaultDocumentTitle": {
+    "message": "X Article"
+  }
+}

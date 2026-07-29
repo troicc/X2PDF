@@ -1,0 +1,70 @@
+name: Bug report
+description: Report an extraction, formatting, formula, code, media, or PDF-export problem.
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please remove private information before submitting diagnostics or screenshots. Do not include cookies, auth tokens, or private Article content.
+  - type: input
+    id: url
+    attributes:
+      label: X URL
+      description: Public Article or post URL that reproduces the issue.
+      placeholder: https://x.com/...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: X2PDF version
+      placeholder: 0.12.0
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: Chrome 138 / Edge 138
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Article extraction
+        - Title / metadata
+        - Code blocks
+        - Mathematical formulas
+        - Images / video / GIF
+        - Lists / quotes / tables
+        - PDF download
+        - Fonts / layout
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result and reproduction steps
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Sanitized diagnostics
+      description: Use Copy diagnostics in the preview, then remove anything private.
+      render: json
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Screenshots or sample PDF
+      description: Drag files here. Use only content you are allowed to share.

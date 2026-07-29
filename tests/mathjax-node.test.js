@@ -1,10 +1,10 @@
 const assert = require('node:assert/strict');
-const { mathjax } = require('/usr/local/slides_js/node_modules/mathjax-full/js/mathjax.js');
-const { TeX } = require('/usr/local/slides_js/node_modules/mathjax-full/js/input/tex.js');
-const { SVG } = require('/usr/local/slides_js/node_modules/mathjax-full/js/output/svg.js');
-const { liteAdaptor } = require('/usr/local/slides_js/node_modules/mathjax-full/js/adaptors/liteAdaptor.js');
-const { RegisterHTMLHandler } = require('/usr/local/slides_js/node_modules/mathjax-full/js/handlers/html.js');
-const { AllPackages } = require('/usr/local/slides_js/node_modules/mathjax-full/js/input/tex/AllPackages.js');
+const { mathjax } = require('mathjax-full/js/mathjax.js');
+const { TeX } = require('mathjax-full/js/input/tex.js');
+const { SVG } = require('mathjax-full/js/output/svg.js');
+const { liteAdaptor } = require('mathjax-full/js/adaptors/liteAdaptor.js');
+const { RegisterHTMLHandler } = require('mathjax-full/js/handlers/html.js');
+const { AllPackages } = require('mathjax-full/js/input/tex/AllPackages.js');
 
 const adaptor = liteAdaptor();
 RegisterHTMLHandler(adaptor);
