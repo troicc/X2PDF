@@ -1,0 +1,28 @@
+<!doctype html><meta charset="utf-8">
+<script src="../mathjax-config.js"></script>
+<script src="../vendor/mathjax/tex-mml-svg.js"></script>
+<script src="../formula-renderer.js"></script>
+<link rel="stylesheet" href="../preview.css">
+<main class="content" id="out"></main><div id="status">pending</div>
+<script>
+(async () => {
+  const formula = String.raw`f_\Theta(\theta)=\frac{\Gamma(d)}{2^{d-2}\Gamma(d/2)^2}\sin^{d-1}(2\theta), E[\Theta]=\pi/4 \text{ and } \operatorname{Var}(\Theta)=O(1/\sqrt d)`;
+  await MathJax.startup.promise;
+  const figure = document.createElement("figure");
+  figure.className = "formula-block";
+  const target = document.createElement("div");
+  target.className = "formula-render-target";
+  const result = await XPDFFormulaRenderer.render(target, {latex: formula, display: true}, {allowSvgFallback: false});
+  figure.append(target);
+  out.append(figure);
+  const math = target.querySelector("math");
+  const row = math.firstElementChild;
+  const rect = math.getBoundingClientRect();
+  const ok = result.rootRowsNormalized === 1 && row?.localName === "mrow" && rect.width > rect.height * 3;
+  status.textContent = ok ? "ok" : `bad:${result.rootRowsNormalized}:${row?.localName}:${rect.width}:${rect.height}`;
+  document.body.dataset.result = status.textContent;
+})().catch(error => {
+  status.textContent = `error:${error.message}`;
+  document.body.dataset.result = status.textContent;
+});
+</script>

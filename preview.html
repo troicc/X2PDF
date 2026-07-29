@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>X 长文导出 PDF</title>
+  <link rel="stylesheet" href="preview.css">
+</head>
+<body>
+  <header class="app-toolbar" data-screen-only>
+    <div class="brand">
+      <div class="brand-mark">X</div>
+      <div>
+        <strong>X 长文导出 PDF</strong>
+        <span>结构化 Article 预览 v0.12</span>
+      </div>
+    </div>
+
+    <div class="toolbar-controls">
+      <label>
+        页面
+        <select id="pageSize">
+          <option value="A4">A4</option>
+          <option value="Letter">Letter</option>
+        </select>
+      </label>
+
+      <label>
+        字体
+        <select id="fontFamily">
+          <option value="x-native" selected>X 原生（Chirp）</option>
+          <option value="serif">衬线阅读（原样式）</option>
+          <option value="system">系统无衬线</option>
+        </select>
+      </label>
+
+      <label>
+        字号
+        <select id="fontSize">
+          <option value="10.4">紧凑</option>
+          <option value="11.2" selected>标准</option>
+          <option value="12.0">宽松</option>
+        </select>
+      </label>
+
+      <label>
+        代码主题
+        <select id="codeTheme">
+          <option value="x-light" selected>X 浅色</option>
+          <option value="github-light">GitHub 浅色</option>
+          <option value="one-dark">One Dark</option>
+          <option value="plain">不高亮</option>
+        </select>
+      </label>
+
+      <label class="check-label"><input id="includeImages" type="checkbox" checked>图片</label>
+      <label class="check-label"><input id="includeEmbeds" type="checkbox" checked>嵌入内容</label>
+      <label class="check-label"><input id="wrapCode" type="checkbox" checked>代码换行</label>
+      <label class="check-label"><input id="includeSource" type="checkbox" checked>来源</label>
+
+      <button id="diagnosticsButton" class="secondary-button" type="button">复制诊断</button>
+      <button id="printButton" class="primary-button" type="button">直接下载 PDF</button>
+    </div>
+  </header>
+
+  <div class="print-warning" data-screen-only>
+    <strong>直接生成 PDF</strong>
+    <span>点击“直接下载 PDF”后由 Chrome 在后台排版并下载，不会再打开系统打印窗口。</span>
+    <span id="exportStatus" class="export-status" aria-live="polite"></span>
+  </div>
+
+  <div id="qualityBanner" class="quality-banner" data-screen-only hidden></div>
+
+  <main id="app" class="app-shell">
+    <section id="emptyState" class="empty-state" hidden>
+      <div class="empty-icon">!</div>
+      <h1>没有可预览的内容</h1>
+      <p id="errorMessage">请返回 X 页面，等待内容加载完成后再次点击扩展图标。</p>
+    </section>
+
+    <article id="document" class="paper" hidden>
+      <header class="document-header">
+        <h1 id="documentTitle" contenteditable="true" spellcheck="false"></h1>
+        <div id="metadata" class="metadata"></div>
+        <img id="coverImage" class="cover-image" alt="" hidden>
+      </header>
+
+      <div id="content" class="content"></div>
+
+      <footer id="sourceFooter" class="source-footer">
+        <span>来源</span>
+        <a id="sourceLink" target="_blank" rel="noopener noreferrer"></a>
+        <small id="capturedAt"></small>
+      </footer>
+    </article>
+  </main>
+
+  <div class="print-tip" data-screen-only>
+    某一格式仍识别异常时，点击“复制诊断”，把内容粘贴给开发者即可定位 DOM 变体。
+  </div>
+
+  <style id="pageRule">@page { size: A4; margin: 16mm 16mm 18mm; }</style>
+  <script src="mathjax-config.js"></script>
+  <script src="vendor/mathjax/tex-mml-svg.js"></script>
+  <script src="vendor/prism/prism.js"></script>
+  <script src="vendor/prism/components/prism-python.min.js"></script>
+  <script src="vendor/prism/components/prism-bash.min.js"></script>
+  <script src="vendor/prism/components/prism-json.min.js"></script>
+  <script src="vendor/prism/components/prism-typescript.min.js"></script>
+  <script src="vendor/prism/components/prism-jsx.min.js"></script>
+  <script src="vendor/prism/components/prism-tsx.min.js"></script>
+  <script src="vendor/prism/components/prism-c.min.js"></script>
+  <script src="vendor/prism/components/prism-cpp.min.js"></script>
+  <script src="vendor/prism/components/prism-java.min.js"></script>
+  <script src="vendor/prism/components/prism-csharp.min.js"></script>
+  <script src="vendor/prism/components/prism-go.min.js"></script>
+  <script src="vendor/prism/components/prism-rust.min.js"></script>
+  <script src="vendor/prism/components/prism-sql.min.js"></script>
+  <script src="vendor/prism/components/prism-yaml.min.js"></script>
+  <script src="vendor/prism/components/prism-markdown.min.js"></script>
+  <script src="vendor/prism/components/prism-diff.min.js"></script>
+  <script src="vendor/prism/components/prism-docker.min.js"></script>
+  <script src="vendor/prism/components/prism-powershell.min.js"></script>
+  <script src="vendor/prism/components/prism-kotlin.min.js"></script>
+  <script src="vendor/prism/components/prism-swift.min.js"></script>
+  <script src="vendor/prism/components/prism-ruby.min.js"></script>
+  <script src="vendor/prism/components/prism-r.min.js"></script>
+  <script src="vendor/prism/components/prism-matlab.min.js"></script>
+  <script src="vendor/prism/components/prism-scala.min.js"></script>
+  <script src="vendor/prism/components/prism-objectivec.min.js"></script>
+  <script src="code-highlighter.js"></script>
+  <script src="clipboard-utils.js"></script>
+  <script src="formula-renderer.js"></script>
+  <script src="preview.js"></script>
+</body>
+</html>

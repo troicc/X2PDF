@@ -1,0 +1,34 @@
+<!doctype html><meta charset="utf-8">
+<script src="../structured-parser.js"></script>
+<script src="../mathjax-config.js"></script>
+<script src="../vendor/mathjax/tex-mml-svg.js"></script>
+<script src="../formula-renderer.js"></script>
+<style>
+body{font-family:Arial,sans-serif;padding:24px}.case{border:1px solid #ddd;margin:16px;padding:12px;text-align:center}
+.case math{font-family:"STIX Two Math","Cambria Math","Times New Roman",serif;font-size:1.15em;user-select:text}
+</style>
+<div id="out"></div><div id="status">pending</div>
+<script>
+(async()=>{
+  const inputs=[
+    String.raw`\\boldsymbol𝑆 \\cdot \\boldsymbol𝑥 \\sim \\mathcal N(\\boldsymbol0, \\lVert\\boldsymbol𝑥\\rVert_2^2 \\cdot \\boldsymbol𝐼_m)
+\\boldsymbol𝑆 \\cdot \\boldsymbol𝑥 \\sim \\mathcal N(\\boldsymbol0, \\lVert\\boldsymbol𝑥\\rVert_2^2 \\cdot \\boldsymbol𝐼_m)`,
+    String.raw`f_R(r)=\\frac{2}{2^{d/2}\\Gamma(d/2)}r^{d-1}\\exp(-r^2/2)`,
+    String.raw`f_\\Theta(\\theta)=\\frac{\\Gamma(d)}{2^{d-2}\\Gamma(d/2)^2}\\sin^{d-1}(2\\theta)`
+  ];
+  await MathJax.startup.promise;
+  for(const input of inputs){
+    const normalized=XPDFStructured.normalizeFormulaSource(input,{forced:true}).latex;
+    const target=document.createElement('div');target.className='case';
+    const result=await XPDFFormulaRenderer.render(target,{latex:normalized,display:true},{allowSvgFallback:false});
+    if(result.renderer!=='native-mathml'||!result.selectable) throw new Error('not-native-selectable');
+    document.getElementById('out').append(target);
+  }
+  const mathCount=document.querySelectorAll('.case > math').length;
+  const svgCount=document.querySelectorAll('.case svg').length;
+  const assistiveCount=document.querySelectorAll('mjx-assistive-mml,.MJX_Assistive_MathML,annotation,annotation-xml').length;
+  const result=(mathCount===3&&svgCount===0&&assistiveCount===0)?'ok':`bad:${mathCount}:${svgCount}:${assistiveCount}`;
+  document.getElementById('status').textContent=result;
+  document.body.dataset.result=result;
+})().catch(e=>{document.getElementById('status').textContent='error:'+e.message;document.body.dataset.result='error:'+e.message;});
+</script>
