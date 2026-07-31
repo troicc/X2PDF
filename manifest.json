@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_appName__",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "__MSG_appDescription__",
   "minimum_chrome_version": "109",
   "permissions": [
@@ -17,7 +17,9 @@
     "https://twitter.com/*",
     "https://www.twitter.com/*",
     "https://pbs.twimg.com/*",
-    "https://abs.twimg.com/*"
+    "https://abs.twimg.com/*",
+    "http://127.0.0.1:8787/*",
+    "http://localhost:8787/*"
   ],
   "background": {
     "service_worker": "background.js"

@@ -22,6 +22,7 @@ const referenced = [
   "preview.html",
   "preview.css",
   "preview.js",
+  "x2red-bridge.js",
   "background.js",
   "extractor.js",
   "structured-parser.js",

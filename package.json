@@ -1,8 +1,8 @@
 {
   "name": "x2pdf",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "private": true,
-  "description": "A local-first Chromium extension that exports X Articles and posts to structured, searchable PDFs.",
+  "description": "A local-first Chromium extension that exports X Articles and posts to structured, searchable PDFs and X2RED.",
   "license": "MIT",
   "repository": {
     "type": "git",
