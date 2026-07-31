@@ -11,7 +11,7 @@ ARCHIVE = DIST / f"X2PDF-v{version}.zip"
 
 runtime_files = [
     "manifest.json", "background.js", "extractor.js", "structured-parser.js",
-    "preview.html", "preview.css", "preview.js", "i18n.js",
+    "preview.html", "preview.css", "preview.js", "x2red-bridge.js", "i18n.js",
     "code-highlighter.js", "formula-renderer.js", "mathjax-config.js",
     "clipboard-utils.js", "LICENSE", "THIRD_PARTY_NOTICES.md"
 ]
